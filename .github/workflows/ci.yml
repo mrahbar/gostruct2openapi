@@ -22,7 +22,7 @@ jobs:
       - name: static program analysis
         uses: golangci/golangci-lint-action@v3
       - name: build
-        run: go build ./cmd/doc
+        run: go build -o gostruct2openapi ./cmd/doc
         env:
           GOPATH: ${{ runner.workspace }}
       - name: test
