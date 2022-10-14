@@ -1,0 +1,45 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go: [ '1.16.x', '1.17.x', '1.18.x', '1.19.x' ]
+        platform: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@master
+        with:
+          path: ./src/github.com/${{ github.repository }}
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go }}
+      - name: static program analysis
+        working-directory: ./src/github.com/${{ github.repository }}
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin # https://github.com/actions/setup-go/issues/14
+          mkdir -p $(go env GOPATH)/src/github.com/${{ github.repository }}
+          ln -s $(pwd) $(go env GOPATH)/src/github.com/${{ github.repository }}
+          make fmt-check lint vet
+        env:
+          GOPATH: ${{ runner.workspace }}
+      - name: build
+        run: make build
+        working-directory: ./src/github.com/${{ github.repository }}
+        env:
+          GOPATH: ${{ runner.workspace }}
+      - name: test
+        working-directory: ./src/github.com/${{ github.repository }}
+        run: make test
+        env:
+          GOPATH: ${{ runner.workspace }}
+      - name: coverage
+        working-directory: ./src/github.com/${{ github.repository }}
+        run: bash <(curl -s https://codecov.io/bash)
