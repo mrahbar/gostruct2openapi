@@ -20,7 +20,7 @@ export GO111MODULE := on
 all: test build
 
 .PHONY: build
-build: deps
+build:
 	$(GOBUILD) -o $(BINARY_NAME) ./cmd/doc
 
 .PHONY: test
