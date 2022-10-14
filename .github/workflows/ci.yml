@@ -10,7 +10,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go: ['1.17.x', '1.18.x']
+        go: ['1.17.x', '1.18.x', '1.19.x']
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -19,19 +19,13 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
-      - name: check fmt
-        run: make fmt-check
-        env:
-          GOPATH: ${{ runner.workspace }}
       - name: static program analysis
         uses: golangci/golangci-lint-action@v3
       - name: build
-        run: make build
+        run: go build ./cmd/doc
         env:
           GOPATH: ${{ runner.workspace }}
       - name: test
-        run: make test
+        run: go test ./...
         env:
           GOPATH: ${{ runner.workspace }}
-      - name: coverage
-        run: bash <(curl -s https://codecov.io/bash)
