@@ -26,12 +26,13 @@ jobs:
         run:  make deps
         env:
           GOPATH: ${{ runner.workspace }}
-      - name: static program analysis
+      - name: check fmt
         working-directory: ./src/github.com/${{ github.repository }}
-        run: |
-          make fmt-check lint vet
+        run: make fmt-check
         env:
           GOPATH: ${{ runner.workspace }}
+      - name: static program analysis
+        uses: golangci/golangci-lint-action@v3
       - name: build
         run: make build
         working-directory: ./src/github.com/${{ github.repository }}
