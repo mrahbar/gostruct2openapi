@@ -6,7 +6,6 @@ GOBUILD:=$(GOCMD) build
 GOCLEAN:=$(GOCMD) clean
 GOTEST:=$(GOCMD) test
 GOGET:=$(GOCMD) get
-GOMODDOWNLOAD:=$(GOCMD) mod download
 GOLIST:=$(GOCMD) list
 GOVET:=$(GOCMD) vet
 GOPATH:=$(shell $(GOCMD) env GOPATH)
@@ -50,7 +49,7 @@ clean:
 
 .PHONY: deps
 deps:
-	$(GOMODDOWNLOAD) github.com/yuin/goldmark
+	echo "no deps to install"
 
 .PHONY: devel-deps
 devel-deps:
