@@ -20,7 +20,7 @@ export GO111MODULE := on
 all: test build
 
 .PHONY: build
-build:
+build: deps
 	$(GOBUILD) -o $(BINARY_NAME) ./cmd/doc
 
 .PHONY: test
@@ -46,6 +46,10 @@ test:
 clean:
 	$(GOCLEAN)
 	rm -f $(BINARY_NAME)
+
+.PHONY: deps
+deps:
+	$(GOGET) github.com/yuin/goldmark
 
 .PHONY: devel-deps
 devel-deps:

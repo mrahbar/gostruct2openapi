@@ -21,6 +21,11 @@ jobs:
         uses: actions/setup-go@v1
         with:
           go-version: ${{ matrix.go }}
+      - name: deps
+        working-directory: ./src/github.com/${{ github.repository }}
+        run:  make deps
+        env:
+          GOPATH: ${{ runner.workspace }}
       - name: static program analysis
         working-directory: ./src/github.com/${{ github.repository }}
         run: |
