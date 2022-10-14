@@ -15,19 +15,11 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@master
-        with:
-          path: ./src/github.com/${{ github.repository }}
       - name: Set up Go
         uses: actions/setup-go@v1
         with:
           go-version: ${{ matrix.go }}
-      - name: deps
-        working-directory: ./src/github.com/${{ github.repository }}
-        run:  make deps
-        env:
-          GOPATH: ${{ runner.workspace }}
       - name: check fmt
-        working-directory: ./src/github.com/${{ github.repository }}
         run: make fmt-check
         env:
           GOPATH: ${{ runner.workspace }}
@@ -35,14 +27,11 @@ jobs:
         uses: golangci/golangci-lint-action@v3
       - name: build
         run: make build
-        working-directory: ./src/github.com/${{ github.repository }}
         env:
           GOPATH: ${{ runner.workspace }}
       - name: test
-        working-directory: ./src/github.com/${{ github.repository }}
         run: make test
         env:
           GOPATH: ${{ runner.workspace }}
       - name: coverage
-        working-directory: ./src/github.com/${{ github.repository }}
         run: bash <(curl -s https://codecov.io/bash)
