@@ -6,6 +6,7 @@ GOBUILD:=$(GOCMD) build
 GOCLEAN:=$(GOCMD) clean
 GOTEST:=$(GOCMD) test
 GOGET:=$(GOCMD) get
+GOMODDOWNLOAD:=$(GOCMD) mod download
 GOLIST:=$(GOCMD) list
 GOVET:=$(GOCMD) vet
 GOPATH:=$(shell $(GOCMD) env GOPATH)
@@ -49,12 +50,11 @@ clean:
 
 .PHONY: deps
 deps:
-	$(GOGET) github.com/yuin/goldmark
+	$(GOMODDOWNLOAD) github.com/yuin/goldmark
 
 .PHONY: devel-deps
 devel-deps:
-	GO111MODULE=off $(GOGET) -v -u \
-		golang.org/x/lint/golint
+	GO111MODULE=off $(GOGET) -v -u golang.org/x/lint/golint
 
 .PHONY: lint
 lint: devel-deps
