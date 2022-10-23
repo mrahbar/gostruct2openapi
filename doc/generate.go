@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/fatih/structtag"
 	"github.com/go-openapi/spec"
-	"go/ast"
-	"go/token"
 	"go/types"
 	"golang.org/x/tools/go/packages"
 	"regexp"
@@ -28,30 +26,20 @@ func NewOpenapiGenerator() Generator {
 }
 
 func (o *openapiGenerator) DocumentStruct(filter *regexp.Regexp, _package ...string) ([]spec.Schema, error) {
-	pkgs, err := o.load(_package...)
-	if err != nil {
-		return nil, err
-	}
-
-	return o.parse(pkgs, filter), nil
-}
-
-func (o *openapiGenerator) load(_package ...string) ([]*packages.Package, error) {
-	mode := packages.NeedTypes | packages.NeedSyntax
-	cfg := &packages.Config{Fset: token.NewFileSet(), Mode: mode}
-	pkgs, err := packages.Load(cfg, _package...)
+	pkgs, err := loadPackages(_package...)
 	if err != nil {
 		return nil, err
 	}
 	if packages.PrintErrors(pkgs) > 0 {
 		return nil, fmt.Errorf("package %s load failed", _package)
 	}
-	return pkgs, nil
+
+	return o.parse(pkgs, filter), nil
 }
 
 func (o *openapiGenerator) parse(pkgs []*packages.Package, filter *regexp.Regexp) (specs []spec.Schema) {
 	for _, pkg := range pkgs {
-		commentMap := o.createCommentMap(pkg)
+		commentMap := loadCommentMap(pkg, filter)
 		scope := pkg.Types.Scope()
 
 		for _, structScopeName := range scope.Names() {
@@ -70,23 +58,21 @@ func (o *openapiGenerator) parse(pkgs []*packages.Package, filter *regexp.Regexp
 					}
 
 					_structTyp := obj.Type().(*types.Named)
-					if _structTyp.NumMethods() > 0 {
-						for i := 0; i < _structTyp.NumMethods(); i++ {
-							scope := _structTyp.Method(i).Scope()
-							for _, methodScopeName := range scope.Names() {
-								if !filter.MatchString(methodScopeName) {
-									continue
-								}
-								obj := scope.Lookup(methodScopeName) //TODO try to rename ID of methodScopeName to public name using @title
-								if obj != nil && obj.Type() != nil && obj.Type().Underlying() != nil {
-									if _struct, ok := obj.Type().Underlying().(*types.Struct); ok { //skip if underlying scope is not a struct, e.g. interface
-										fmt.Printf("Processing method struct: name=%s\n", methodScopeName)
-										props := spec.SchemaProps{ID: methodScopeName, Type: []string{objectType}, Properties: make(spec.SchemaProperties)}
-										subSpecs := o.toSpec(&props, _struct, commentMap, methodScopeName)
-										specs = append(specs, spec.Schema{SchemaProps: props})
-										for _, s := range subSpecs {
-											specs = append(specs, s)
-										}
+					for i := 0; i < _structTyp.NumMethods(); i++ {
+						scope := _structTyp.Method(i).Scope()
+						for _, methodScopeName := range scope.Names() {
+							if !filter.MatchString(methodScopeName) {
+								continue
+							}
+							obj := scope.Lookup(methodScopeName) //TODO try to rename ID of methodScopeName to public name using @title
+							if obj != nil && obj.Type() != nil && obj.Type().Underlying() != nil {
+								if _struct, ok := obj.Type().Underlying().(*types.Struct); ok { //skip if underlying scope is not a struct, e.g. interface
+									fmt.Printf("Processing method struct: name=%s\n", methodScopeName)
+									props := spec.SchemaProps{ID: methodScopeName, Type: []string{objectType}, Properties: make(spec.SchemaProperties)}
+									subSpecs := o.toSpec(&props, _struct, commentMap, methodScopeName)
+									specs = append(specs, spec.Schema{SchemaProps: props})
+									for _, s := range subSpecs {
+										specs = append(specs, s)
 									}
 								}
 							}
@@ -99,35 +85,6 @@ func (o *openapiGenerator) parse(pkgs []*packages.Package, filter *regexp.Regexp
 	}
 
 	return
-}
-
-func (o *openapiGenerator) createCommentMap(pkg *packages.Package) map[string]string {
-	commentMap := make(map[string]string)
-
-	for _, s := range pkg.Syntax {
-		for structName, object := range s.Scope.Objects {
-			switch t := object.Decl.(type) {
-			case *ast.TypeSpec:
-				switch _struct := t.Type.(type) {
-				case *ast.StructType:
-					for _, field := range _struct.Fields.List {
-						switch field.Type.(type) {
-						case *ast.Ident, *ast.ArrayType:
-							for _, name := range field.Names {
-								if f, ok := name.Obj.Decl.(*ast.Field); ok {
-									if len(f.Doc.Text()) > 0 {
-										commentMap[fmt.Sprintf("%s.%s", structName, name.Name)] = f.Doc.Text()
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return commentMap
 }
 
 func (o *openapiGenerator) toSpec(props *spec.SchemaProps, _struct *types.Struct, commentMap map[string]string, structName string) map[string]spec.Schema {

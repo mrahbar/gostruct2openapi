@@ -8,6 +8,7 @@ import (
 type TestBaseInterface interface {
 }
 
+//@title Test Base Struct
 type TestBaseStruct struct {
 	//baseFieldB comment
 	baseFieldB string
@@ -19,6 +20,7 @@ type TestBaseStruct struct {
 	BaseFieldD bool
 }
 
+//@title Test Underlying Struct
 type TestUnderlyingStruct struct {
 	//underlyingFieldB comment
 	underlyingFieldB string
@@ -30,6 +32,7 @@ type TestUnderlyingStruct struct {
 	UnderlyingFieldD bool
 }
 
+//@title Test Struct 0
 type testStruct0 struct {
 	fieldA string
 	FieldB string
@@ -37,6 +40,7 @@ type testStruct0 struct {
 	FieldD bool
 }
 
+//@title Test Struct 1
 type TestStruct1 struct {
 	//fieldA comment
 	fieldA string
@@ -48,6 +52,7 @@ type TestStruct1 struct {
 	FieldD bool
 }
 
+//@title Test Struct 2
 type TestStruct2 struct {
 	//TestBaseStruct comment
 	TestBaseStruct
@@ -61,6 +66,7 @@ type TestStruct2 struct {
 	FieldD []bool
 }
 
+//@title Test Struct 3
 type TestStruct3 struct {
 	//TestBaseStruct comment
 	TestBaseStruct
@@ -78,6 +84,7 @@ type TestStruct3 struct {
 	FieldF TestBaseInterface
 }
 
+//@title Test Struct 4
 type TestStruct4 struct {
 	//FieldA comment
 	FieldA []string `json:"otherFieldA"`
@@ -89,11 +96,12 @@ type TestStruct4 struct {
 	FieldD []bool `json:"otherFieldD"`
 }
 
+//@title HTTP Handler
 type httpHandler struct {
 }
 
 func (g *httpHandler) handleRequest() {
-	//@title GCPAsset
+	//@title MyAsset
 	var resp struct {
 		Assets []*TestStruct4 `json:"assets"`
 	}
