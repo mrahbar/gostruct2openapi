@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/dave/dst v0.27.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
