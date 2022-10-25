@@ -2,6 +2,7 @@ package testdata
 
 import (
 	"fmt"
+	"github.com/mrahbar/gostruct2openapi/testdata"
 	"time"
 )
 
@@ -103,7 +104,8 @@ type httpHandler struct {
 func (g *httpHandler) handleRequest() {
 	//@title MyAsset
 	var resp struct {
-		Assets []*TestStruct4 `json:"assets"`
+		TestStructs  []*TestStruct4               `json:"structs"`
+		OtherStructs []*testdata.TestOtherStruct5 `json:"other_structs"`
 	}
 	fmt.Println(resp)
 }

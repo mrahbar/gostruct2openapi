@@ -8,14 +8,14 @@ import (
 )
 
 func Test_OpenapiGenerator_UnknownPackage(t *testing.T) {
-	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct1"))
+	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct1"), "json")
 	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/unknown")
 	assert.Error(t, err)
 	assert.Empty(t, specs)
 }
 
 func Test_OpenapiGenerator_Struct0(t *testing.T) {
-	generator := NewOpenapiGenerator(regexp.MustCompile("testStruct0"))
+	generator := NewOpenapiGenerator(regexp.MustCompile("testStruct0"), "json")
 	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/testdata")
 	assert.NoError(t, err)
 
@@ -39,7 +39,7 @@ func Test_OpenapiGenerator_Struct0(t *testing.T) {
 }
 
 func Test_OpenapiGenerator_Struct1(t *testing.T) {
-	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct1"))
+	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct1"), "json")
 	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/testdata")
 	assert.NoError(t, err)
 	assert.Len(t, specs, 1)
@@ -67,7 +67,7 @@ func Test_OpenapiGenerator_Struct1(t *testing.T) {
 }
 
 func Test_OpenapiGenerator_Struct2(t *testing.T) {
-	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct2"))
+	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct2"), "json")
 	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/testdata")
 	assert.NoError(t, err)
 	assert.Len(t, specs, 1)
@@ -116,7 +116,7 @@ func Test_OpenapiGenerator_Struct2(t *testing.T) {
 }
 
 func Test_OpenapiGenerator_Struct3(t *testing.T) {
-	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct3"))
+	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct3"), "json")
 	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/testdata")
 	assert.NoError(t, err)
 	assert.Len(t, specs, 2)
@@ -126,7 +126,6 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 	assert.JSONEq(t, `[
 		{
 			"id": "TestStruct3",
-			"type":"object",
 			"properties": {
 				"BaseFieldB": {
 					"description": "BaseFieldB comment",
@@ -169,11 +168,11 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 					"description": "FieldF comment",
 					"type": "object"
 				}
-			}
+			},
+			"type":"object"
 		},
 		{
 			"id": "TestUnderlyingStruct",
-			"type":"object",
 			"properties": {
 				"UnderlyingFieldB": {
 					"description": "UnderlyingFieldB comment",
@@ -187,13 +186,14 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 					"description": "UnderlyingFieldD comment",
 					"type": "boolean"
 				}
-			}
+			},
+			"type":"object"
 		}
 	]`, string(bytes))
 }
 
 func Test_OpenapiGenerator_Struct4(t *testing.T) {
-	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct4"))
+	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct4"), "json")
 	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/testdata")
 	assert.NoError(t, err)
 	assert.Len(t, specs, 1)
@@ -237,7 +237,7 @@ func Test_OpenapiGenerator_Struct4(t *testing.T) {
 }
 
 func Test_OpenapiGenerator_Method(t *testing.T) {
-	generator := NewOpenapiGenerator(regexp.MustCompile("httpHandler|resp"))
+	generator := NewOpenapiGenerator(regexp.MustCompile("httpHandler|resp"), "json")
 	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/testdata")
 	assert.NoError(t, err)
 	assert.Len(t, specs, 3)
@@ -245,55 +245,122 @@ func Test_OpenapiGenerator_Method(t *testing.T) {
 	bytes, err := json.Marshal(specs)
 	assert.NoError(t, err)
 	assert.JSONEq(t, `[
-	{
-		"id": "httpHandler",
-		"type":"object"
-	},
-	{
-		"id": "resp",
-		"type":"object",
-		"properties": {
-			"assets": {
-				"items": {
-					"$ref": "#/components/schemas/TestStruct4"
+		{
+			"id": "httpHandler",
+			"type": "object"
+		}, 
+		{
+			"id": "resp",
+			"type": "object",
+			"properties": {
+				"other_structs": {
+					"items": {
+						"$ref": "#/components/schemas/TestOtherStruct5"
+					},
+					"type": "array"
 				},
-				"type": "array"
+				"structs": {
+					"items": {
+						"$ref": "#/components/schemas/TestStruct4"
+					},
+					"type": "array"
+				}
 			}
-		}
-	},
-	{
-		"id": "TestStruct4",
-		"type":"object",
-		"properties": {
-			"otherFieldA": {
-				"description": "FieldA comment",
-				"items": {
+		}, 
+		{
+			"id": "TestStruct4",
+			"properties": {
+				"otherFieldA": {
+					"description": "FieldA comment",
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				"otherFieldB": {
+					"description": "FieldB comment",
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				"otherFieldC": {
+					"description": "FieldC comment",
+					"items": {
+						"type": "integer"
+					},
+					"type": "array"
+				},
+				"otherFieldD": {
+					"description": "FieldD comment",
+					"items": {
+						"type": "boolean"
+					},
+					"type": "array"
+				}
+			},
+			"type": "object"
+		}, 
+		{
+			"id": "TestOtherStruct5",
+			"properties": {
+				"BaseFieldB": {
+					"description": "BaseFieldB comment",
 					"type": "string"
 				},
-				"type": "array"
-			},
-			"otherFieldB": {
-				"description": "FieldB comment",
-				"items": {
-					"type": "string"
+				"BaseFieldC": {
+					"description": "BaseFieldC comment",
+					"type": "number"
 				},
-				"type": "array"
-			},
-			"otherFieldC": {
-				"description": "FieldC comment",
-				"items": {
-					"type": "integer"
-				},
-				"type": "array"
-			},
-			"otherFieldD": {
-				"description": "FieldD comment",
-				"items": {
+				"BaseFieldD": {
+					"description": "BaseFieldD comment",
 					"type": "boolean"
 				},
-				"type": "array"
-			}
+				"otherFieldA": {
+					"description": "FieldA comment",
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				"otherFieldB": {
+					"description": "FieldB comment",
+					"$ref": "#/components/schemas/TestOtherUnderlyingStruct"
+				},
+				"otherFieldC": {
+					"description": "FieldC comment",
+					"items": {
+						"type": "integer"
+					},
+					"type": "array"
+				},
+				"otherFieldD": {
+					"description": "FieldD comment",
+					"items": {
+						"type": "boolean"
+					},
+					"type": "array"
+				}
+			},
+			"type": "object"
+		}, 
+		{
+			"id": "TestOtherUnderlyingStruct",
+			"properties": {
+				"UnderlyingFieldB": {
+					"description": "UnderlyingFieldB comment",
+					"type": "string"
+				},
+				"UnderlyingFieldC": {
+					"description": "UnderlyingFieldC comment",
+					"type": "number"
+				},
+				"UnderlyingFieldD": {
+					"description": "UnderlyingFieldD comment",
+					"type": "boolean"
+				}
+			},
+			"type": "object"
 		}
-	}
-]`, string(bytes))
+	]`, string(bytes))
 }

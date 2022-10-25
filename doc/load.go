@@ -6,7 +6,6 @@ import (
 	"go/token"
 	"go/types"
 	"golang.org/x/tools/go/packages"
-	"regexp"
 )
 
 func loadPackages(_package ...string) ([]*packages.Package, error) {
@@ -22,7 +21,7 @@ func loadPackages(_package ...string) ([]*packages.Package, error) {
 	return pkgs, nil
 }
 
-func loadCommentMap(pkg *packages.Package, filter *regexp.Regexp) map[string]string {
+func loadCommentMap(pkg *packages.Package) map[string]string {
 	commentMap := make(map[string]string)
 	for _, syntax := range pkg.Syntax {
 		for structName, object := range syntax.Scope.Objects {

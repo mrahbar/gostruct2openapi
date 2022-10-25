@@ -51,6 +51,10 @@ type targetStruct struct {
 	origStruct *types.Struct
 }
 
+func newTargetStruct(name string, origType types.Type, origStruct *types.Struct) *targetStruct {
+	return &targetStruct{name: name, origType: origType, origStruct: origStruct}
+}
+
 type targetField struct {
 	structName  string
 	fieldTag    string
