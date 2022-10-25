@@ -24,6 +24,10 @@ type openapiGenerator struct {
 }
 
 func NewOpenapiGenerator(filter *regexp.Regexp, tags ...string) Generator {
+	if len(tags) == 0 {
+		tags = append(tags, "json")
+	}
+
 	return &openapiGenerator{filter: filter, structTags: tags, commentRegistry: newCommentRegistry()}
 }
 
@@ -124,8 +128,8 @@ func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *targetStruct)
 			}
 
 			//early handling of time.Time due to underlying type is actually a struct
-			if fieldType := structFieldTypeMap[underlying.String()]; fieldType.format == "RFC3339" {
-				tf.specField = fieldType
+			if o.isTimeField(field.Type()) {
+				tf.specField = structFieldTypeMap["time.Time"]
 				o.mapField(props, tf)
 				continue
 			}
@@ -234,4 +238,15 @@ func (o *openapiGenerator) mapField(props *spec.SchemaProps, target *targetField
 	props.Properties[fieldName] = spec.Schema{
 		SchemaProps: schemaProps,
 	}
+}
+
+func (o *openapiGenerator) isTimeField(field types.Type) bool {
+	switch u := field.(type) {
+	case *types.Named:
+		return u.Obj().Name() == "Time" && u.Obj().Pkg().Name() == "time"
+	case *types.Pointer:
+		return o.isTimeField(u.Elem())
+	}
+
+	return false
 }

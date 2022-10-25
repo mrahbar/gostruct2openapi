@@ -83,6 +83,8 @@ type TestStruct3 struct {
 	FieldE []*TestUnderlyingStruct
 	//FieldF comment
 	FieldF TestBaseInterface
+	//FieldG comment
+	FieldG *time.Time
 }
 
 //@title Test Struct 4

@@ -20,13 +20,12 @@ const (
 )
 
 var structFieldTypeMap = map[string]specField{
-	"string":  {baseType: stringType},
-	"int":     {baseType: integerType},
-	"float32": {baseType: numberType},
-	"float64": {baseType: numberType},
-	"bool":    {baseType: booleanType},
-	//string representation of time.Time
-	"struct{wall uint64; ext int64; loc *time.Location}": {baseType: stringType, format: timeFormat},
+	"string":    {baseType: stringType},
+	"int":       {baseType: integerType},
+	"float32":   {baseType: numberType},
+	"float64":   {baseType: numberType},
+	"bool":      {baseType: booleanType},
+	"time.Time": {baseType: stringType, format: timeFormat},
 }
 
 type SpecRegistry map[string]spec.Schema

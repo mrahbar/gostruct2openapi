@@ -167,6 +167,10 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 				"FieldF": {
 					"description": "FieldF comment",
 					"type": "object"
+				},
+				"FieldG": {
+					"format": "RFC3339",
+					"type": "string"
 				}
 			},
 			"type":"object"
