@@ -240,127 +240,123 @@ func Test_OpenapiGenerator_Method(t *testing.T) {
 	generator := NewOpenapiGenerator(regexp.MustCompile("httpHandler|resp"), "json")
 	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/testdata")
 	assert.NoError(t, err)
-	assert.Len(t, specs, 3)
+	assert.Len(t, specs, 5)
 
 	bytes, err := json.Marshal(specs)
 	assert.NoError(t, err)
-	assert.JSONEq(t, `[
-		{
-			"id": "httpHandler",
-			"type": "object"
-		}, 
-		{
-			"id": "resp",
-			"type": "object",
-			"properties": {
-				"other_structs": {
-					"items": {
-						"$ref": "#/components/schemas/TestOtherStruct5"
-					},
-					"type": "array"
-				},
-				"structs": {
-					"items": {
-						"$ref": "#/components/schemas/TestStruct4"
-					},
-					"type": "array"
-				}
-			}
-		}, 
-		{
-			"id": "TestStruct4",
-			"properties": {
-				"otherFieldA": {
-					"description": "FieldA comment",
-					"items": {
-						"type": "string"
-					},
-					"type": "array"
-				},
-				"otherFieldB": {
-					"description": "FieldB comment",
-					"items": {
-						"type": "string"
-					},
-					"type": "array"
-				},
-				"otherFieldC": {
-					"description": "FieldC comment",
-					"items": {
-						"type": "integer"
-					},
-					"type": "array"
-				},
-				"otherFieldD": {
-					"description": "FieldD comment",
-					"items": {
-						"type": "boolean"
-					},
-					"type": "array"
-				}
-			},
-			"type": "object"
-		}, 
-		{
-			"id": "TestOtherStruct5",
-			"properties": {
-				"BaseFieldB": {
-					"description": "BaseFieldB comment",
-					"type": "string"
-				},
-				"BaseFieldC": {
-					"description": "BaseFieldC comment",
-					"type": "number"
-				},
-				"BaseFieldD": {
-					"description": "BaseFieldD comment",
-					"type": "boolean"
-				},
-				"otherFieldA": {
-					"description": "FieldA comment",
-					"items": {
-						"type": "string"
-					},
-					"type": "array"
-				},
-				"otherFieldB": {
-					"description": "FieldB comment",
-					"$ref": "#/components/schemas/TestOtherUnderlyingStruct"
-				},
-				"otherFieldC": {
-					"description": "FieldC comment",
-					"items": {
-						"type": "integer"
-					},
-					"type": "array"
-				},
-				"otherFieldD": {
-					"description": "FieldD comment",
-					"items": {
-						"type": "boolean"
-					},
-					"type": "array"
-				}
-			},
-			"type": "object"
-		}, 
-		{
-			"id": "TestOtherUnderlyingStruct",
-			"properties": {
-				"UnderlyingFieldB": {
-					"description": "UnderlyingFieldB comment",
-					"type": "string"
-				},
-				"UnderlyingFieldC": {
-					"description": "UnderlyingFieldC comment",
-					"type": "number"
-				},
-				"UnderlyingFieldD": {
-					"description": "UnderlyingFieldD comment",
-					"type": "boolean"
-				}
-			},
-			"type": "object"
-		}
-	]`, string(bytes))
+	assert.JSONEq(t, `[{
+        "id": "TestOtherStruct5",
+        "properties": {
+            "BaseFieldB": {
+                "description": "BaseFieldB comment",
+                "type": "string"
+            },
+            "BaseFieldC": {
+                "description": "BaseFieldC comment",
+                "type": "number"
+            },
+            "BaseFieldD": {
+                "description": "BaseFieldD comment",
+                "type": "boolean"
+            },
+            "otherFieldA": {
+                "description": "FieldA comment",
+                "items": {
+                    "type": "string"
+                },
+                "type": "array"
+            },
+            "otherFieldB": {
+                "$ref": "#/components/schemas/TestOtherUnderlyingStruct",
+                "description": "FieldB comment"
+            },
+            "otherFieldC": {
+                "description": "FieldC comment",
+                "items": {
+                    "type": "integer"
+                },
+                "type": "array"
+            },
+            "otherFieldD": {
+                "description": "FieldD comment",
+                "items": {
+                    "type": "boolean"
+                },
+                "type": "array"
+            }
+        },
+        "type": "object"
+    }, {
+        "id": "TestOtherUnderlyingStruct",
+        "properties": {
+            "UnderlyingFieldB": {
+                "description": "UnderlyingFieldB comment",
+                "type": "string"
+            },
+            "UnderlyingFieldC": {
+                "description": "UnderlyingFieldC comment",
+                "type": "number"
+            },
+            "UnderlyingFieldD": {
+                "description": "UnderlyingFieldD comment",
+                "type": "boolean"
+            }
+        },
+        "type": "object"
+    }, {
+        "id": "TestStruct4",
+        "properties": {
+            "otherFieldA": {
+                "description": "FieldA comment",
+                "items": {
+                    "type": "string"
+                },
+                "type": "array"
+            },
+            "otherFieldB": {
+                "description": "FieldB comment",
+                "items": {
+                    "type": "string"
+                },
+                "type": "array"
+            },
+            "otherFieldC": {
+                "description": "FieldC comment",
+                "items": {
+                    "type": "integer"
+                },
+                "type": "array"
+            },
+            "otherFieldD": {
+                "description": "FieldD comment",
+                "items": {
+                    "type": "boolean"
+                },
+                "type": "array"
+            }
+        },
+        "type": "object"
+    }, {
+        "id": "httpHandler",
+        "type": "object"
+    }, {
+        "id": "resp",
+        "properties": {
+            "other_structs": {
+                "items": {
+                    "$ref": "#/components/schemas/TestOtherStruct5"
+                },
+                "type": "array"
+            },
+            "structs": {
+                "items": {
+                    "$ref": "#/components/schemas/TestStruct4"
+                },
+                "type": "array"
+            }
+        },
+        "type": "object"
+    }
+]
+`, string(bytes))
 }

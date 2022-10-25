@@ -7,7 +7,6 @@ import (
 	"go/types"
 	"golang.org/x/tools/go/packages"
 	"regexp"
-	"strings"
 )
 
 type Generator interface {
@@ -19,21 +18,19 @@ type specField struct {
 }
 
 type openapiGenerator struct {
-	filter     *regexp.Regexp
-	structTags []string
+	filter          *regexp.Regexp
+	structTags      []string
+	commentRegistry *CommentRegistry
 }
 
 func NewOpenapiGenerator(filter *regexp.Regexp, tags ...string) Generator {
-	return &openapiGenerator{filter: filter, structTags: tags}
+	return &openapiGenerator{filter: filter, structTags: tags, commentRegistry: newCommentRegistry()}
 }
 
 func (o *openapiGenerator) DocumentStruct(_package ...string) ([]spec.Schema, error) {
 	pkgs, err := loadPackages(_package...)
 	if err != nil {
 		return nil, err
-	}
-	if packages.PrintErrors(pkgs) > 0 {
-		return nil, fmt.Errorf("package %s load failed", _package)
 	}
 
 	registry := o.parse(pkgs)
@@ -44,48 +41,51 @@ func (o *openapiGenerator) parse(pkgs []*packages.Package) SpecRegistry {
 	specs := make(SpecRegistry)
 
 	for _, pkg := range pkgs {
-		commentMap := loadCommentMap(pkg)
+		o.commentRegistry.load(pkg)
 		scope := pkg.Types.Scope()
 
 		for _, structScopeName := range scope.Names() {
 			if !o.filter.MatchString(structScopeName) {
 				continue
 			}
-			specs.Extend(o.processObj(targetType{structScopeName, scope.Lookup(structScopeName)}, commentMap))
+			specs.Extend(o.processObj(newTargetType(structScopeName, scope.Lookup(structScopeName))))
 		}
 	}
 
 	return specs
 }
 
-func (o *openapiGenerator) processObj(target targetType, commentMap map[string]string) SpecRegistry {
+func (o *openapiGenerator) processObj(target *targetType) SpecRegistry {
 	if !target.isValid() || !target.isStruct() {
 		return nil
 	}
 
 	specs := make(SpecRegistry)
-	specs.Extend(o.processTarget(target.toTargetStruct(), commentMap))
+	specs.Extend(o.processTarget(target.toTargetStruct()))
 	if target.isNamedType() {
-		specs.Extend(o.processStructMethods(target.toNamedType(), commentMap))
+		specs.Extend(o.processStructMethods(target.toNamedType()))
 	}
 
 	return specs
 }
 
-func (o *openapiGenerator) processTarget(target *targetStruct, commentMap map[string]string) SpecRegistry {
+func (o *openapiGenerator) processTarget(target *targetStruct) SpecRegistry {
 	fmt.Printf("Processing struct: name=%s\n", target.name)
 
+	if target.isNamedType() {
+		if pkgs, err := loadPackages(target.toNamedType().Obj().Pkg().Path()); err == nil {
+			o.commentRegistry.load(pkgs...)
+		}
+	}
 	var props = spec.SchemaProps{ID: target.name, Type: []string{objectType}, Properties: make(spec.SchemaProperties)}
-	subSpecs := o.toSpec(&props, target, commentMap)
-
 	specs := make(SpecRegistry)
 	specs.AddSchemaProp(target.name, props)
-	specs.Extend(subSpecs)
+	specs.Extend(o.toSpec(&props, target))
 
 	return specs
 }
 
-func (o *openapiGenerator) processStructMethods(_structTyp *types.Named, commentMap map[string]string) SpecRegistry {
+func (o *openapiGenerator) processStructMethods(_structTyp *types.Named) SpecRegistry {
 	specs := make(SpecRegistry)
 
 	for i := 0; i < _structTyp.NumMethods(); i++ {
@@ -94,14 +94,14 @@ func (o *openapiGenerator) processStructMethods(_structTyp *types.Named, comment
 			if !o.filter.MatchString(methodScopeName) {
 				continue
 			}
-			specs = o.processObj(targetType{methodScopeName, scope.Lookup(methodScopeName)}, commentMap)
+			specs.Extend(o.processObj(newTargetType(methodScopeName, scope.Lookup(methodScopeName))))
 		}
 	}
 
 	return specs
 }
 
-func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *targetStruct, commentMap map[string]string) SpecRegistry {
+func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *targetStruct) SpecRegistry {
 	specs := make(SpecRegistry)
 
 	for i := 0; i < target.origStruct.NumFields(); i++ {
@@ -109,71 +109,47 @@ func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *targetStruct,
 
 		if field.Embedded() {
 			if _embeddedStruct, ok := field.Type().Underlying().(*types.Struct); ok {
-				subSpecs := o.toSpec(props, newTargetStruct(field.Name(), field.Type(), _embeddedStruct), commentMap)
+				subSpecs := o.toSpec(props, newTargetStruct(field.Name(), field.Type(), _embeddedStruct))
 				specs.Extend(subSpecs)
 			}
 		} else if field.Exported() {
 			fieldName := field.Name()
 			underlying := field.Type().Underlying()
 
+			tf := &targetField{
+				packageID:  field.Pkg().Path(),
+				structName: target.name,
+				fieldTag:   target.origStruct.Tag(i),
+				fieldName:  fieldName,
+			}
+
 			//early handling of time.Time due to underlying type is actually a struct
 			if fieldType := structFieldTypeMap[underlying.String()]; fieldType.format == "RFC3339" {
-				tf := &targetField{
-					structName: target.name,
-					fieldTag:   target.origStruct.Tag(i),
-					fieldName:  fieldName,
-					specField:  fieldType,
-				}
-				o.mapField(props, tf, commentMap)
+				tf.specField = fieldType
+				o.mapField(props, tf)
 				continue
 			}
 
 			switch u := underlying.(type) {
 			case *types.Interface:
 				// falling back to object type because handling of interface type is not possible
-				tf := &targetField{
-					structName: target.name,
-					fieldTag:   target.origStruct.Tag(i),
-					fieldName:  fieldName,
-					specField:  specField{baseType: objectType},
-				}
-				o.mapField(props, tf, commentMap)
+				tf.specField = specField{baseType: objectType}
+				o.mapField(props, tf)
 			case *types.Struct:
-				obj := field.Type().(*types.Named).Obj()
-				name := obj.Name()
-				tf := &targetField{
-					structName: target.name,
-					fieldTag:   target.origStruct.Tag(i),
-					fieldName:  fieldName,
-					specField:  specField{ref: name},
-				}
-				o.mapField(props, tf, commentMap)
-				specs.Extend(o.processTarget(newTargetStruct(name, field.Type(), u), commentMap))
+				name := field.Type().(*types.Named).Obj().Name()
+				tf.specField = specField{ref: name}
+				o.mapField(props, tf)
+				specs.Extend(o.processTarget(newTargetStruct(name, field.Type(), u)))
 			case *types.Pointer:
-				tf := &targetField{
-					structName: target.name,
-					fieldTag:   target.origStruct.Tag(i),
-					fieldName:  fieldName,
-					elem:       u.Elem(),
-				}
-				specs.Extend(o.handleUnderlyingField(props, tf, commentMap))
+				tf.elem = u.Elem()
+				specs.Extend(o.handleUnderlyingField(props, tf))
 			case *types.Slice:
-				tf := &targetField{
-					structName:  target.name,
-					fieldTag:    target.origStruct.Tag(i),
-					fieldName:   fieldName,
-					elem:        u.Elem(),
-					isArrayType: true,
-				}
-				specs.Extend(o.handleUnderlyingField(props, tf, commentMap))
+				tf.elem = u.Elem()
+				tf.isArrayType = true
+				specs.Extend(o.handleUnderlyingField(props, tf))
 			default:
-				tf := &targetField{
-					structName: target.name,
-					fieldTag:   target.origStruct.Tag(i),
-					fieldName:  fieldName,
-					specField:  structFieldTypeMap[underlying.String()],
-				}
-				o.mapField(props, tf, commentMap)
+				tf.specField = structFieldTypeMap[underlying.String()]
+				o.mapField(props, tf)
 			}
 		}
 	}
@@ -181,13 +157,12 @@ func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *targetStruct,
 	return specs
 }
 
-//, structName string, fieldName string, tag string, elem types.Type, isArrayType bool
-func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target *targetField, commentMap map[string]string) SpecRegistry {
+func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target *targetField) SpecRegistry {
 	specs := make(SpecRegistry)
 
 	if _underlyingStruct, ok := target.elem.Underlying().(*types.Pointer); ok {
 		target.elem = _underlyingStruct.Elem()
-		return o.handleUnderlyingField(props, target, commentMap)
+		return o.handleUnderlyingField(props, target)
 	} else if _underlyingStruct, ok := target.elem.Underlying().(*types.Struct); ok {
 		field := target.elem.(*types.Named).Obj()
 		name := field.Name()
@@ -196,8 +171,8 @@ func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target
 			_specField.baseType = arrayType
 		}
 		target.specField = _specField
-		o.mapField(props, target, commentMap)
-		specs.Extend(o.processTarget(newTargetStruct(name, field.Type(), _underlyingStruct), commentMap))
+		o.mapField(props, target)
+		specs.Extend(o.processTarget(newTargetStruct(name, field.Type(), _underlyingStruct)))
 	} else if _underlyingBasic, ok := target.elem.Underlying().(*types.Basic); ok {
 		var _specField specField
 		if target.isArrayType {
@@ -206,7 +181,7 @@ func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target
 			_specField = structFieldTypeMap[_underlyingBasic.String()]
 		}
 		target.specField = _specField
-		o.mapField(props, target, commentMap)
+		o.mapField(props, target)
 	} else {
 		fmt.Printf("has no basic type but %s", target.elem.Underlying().String())
 		var _specField specField
@@ -216,19 +191,16 @@ func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target
 			_specField = specField{baseType: objectType}
 		}
 		target.specField = _specField
-		o.mapField(props, target, commentMap)
+		o.mapField(props, target)
 	}
 
 	return specs
 }
 
-func (o *openapiGenerator) mapField(props *spec.SchemaProps, target *targetField, commentMap map[string]string) {
-	description := strings.Replace(commentMap[fmt.Sprintf("%s.%s", target.structName, target.fieldName)], "\n", "", -1)
-
+func (o *openapiGenerator) mapField(props *spec.SchemaProps, target *targetField) {
 	var fieldName = target.fieldName
 	if len(target.fieldTag) > 0 {
-		tags, err := structtag.Parse(target.fieldTag)
-		if err == nil {
+		if tags, err := structtag.Parse(target.fieldTag); err == nil {
 			for _, tp := range tags.Tags() {
 				if Contains(o.structTags, tp.Key) {
 					fieldName = tp.Name
@@ -239,7 +211,7 @@ func (o *openapiGenerator) mapField(props *spec.SchemaProps, target *targetField
 
 	schemaProps := spec.SchemaProps{
 		Format:      target.specField.format,
-		Description: description,
+		Description: o.commentRegistry.lookup(target.ID()),
 	}
 
 	if target.specField.baseType == arrayType {

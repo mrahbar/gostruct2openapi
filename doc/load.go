@@ -9,8 +9,7 @@ import (
 )
 
 func loadPackages(_package ...string) ([]*packages.Package, error) {
-	mode := packages.NeedTypes | packages.NeedSyntax
-	cfg := &packages.Config{Fset: token.NewFileSet(), Mode: mode}
+	cfg := &packages.Config{Fset: token.NewFileSet(), Mode: packages.NeedTypes | packages.NeedSyntax}
 	pkgs, err := packages.Load(cfg, _package...)
 	if err != nil {
 		return nil, err
