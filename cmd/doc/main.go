@@ -23,8 +23,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	generator := doc.NewOpenapiGenerator()
-	specs, err := generator.DocumentStruct(filter, packages...)
+	generator := doc.NewOpenapiGenerator(filter)
+	specs, err := generator.DocumentStruct(packages...)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -8,17 +8,15 @@ import (
 )
 
 func Test_OpenapiGenerator_UnknownPackage(t *testing.T) {
-	generator := NewOpenapiGenerator()
-	compile := regexp.MustCompile("TestStruct1")
-	specs, err := generator.DocumentStruct(compile, "github.com/mrahbar/gostruct2openapi/doc/unknown")
+	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct1"))
+	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/unknown")
 	assert.Error(t, err)
 	assert.Empty(t, specs)
 }
 
 func Test_OpenapiGenerator_Struct0(t *testing.T) {
-	generator := NewOpenapiGenerator()
-	compile := regexp.MustCompile("testStruct0")
-	specs, err := generator.DocumentStruct(compile, "github.com/mrahbar/gostruct2openapi/doc/testdata")
+	generator := NewOpenapiGenerator(regexp.MustCompile("testStruct0"))
+	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/testdata")
 	assert.NoError(t, err)
 
 	bytes, err := specs[0].MarshalJSON()
@@ -41,9 +39,8 @@ func Test_OpenapiGenerator_Struct0(t *testing.T) {
 }
 
 func Test_OpenapiGenerator_Struct1(t *testing.T) {
-	generator := NewOpenapiGenerator()
-	compile := regexp.MustCompile("TestStruct1")
-	specs, err := generator.DocumentStruct(compile, "github.com/mrahbar/gostruct2openapi/doc/testdata")
+	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct1"))
+	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/testdata")
 	assert.NoError(t, err)
 	assert.Len(t, specs, 1)
 
@@ -70,9 +67,8 @@ func Test_OpenapiGenerator_Struct1(t *testing.T) {
 }
 
 func Test_OpenapiGenerator_Struct2(t *testing.T) {
-	generator := NewOpenapiGenerator()
-	compile := regexp.MustCompile("TestStruct2")
-	specs, err := generator.DocumentStruct(compile, "github.com/mrahbar/gostruct2openapi/doc/testdata")
+	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct2"))
+	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/testdata")
 	assert.NoError(t, err)
 	assert.Len(t, specs, 1)
 
@@ -120,9 +116,8 @@ func Test_OpenapiGenerator_Struct2(t *testing.T) {
 }
 
 func Test_OpenapiGenerator_Struct3(t *testing.T) {
-	generator := NewOpenapiGenerator()
-	compile := regexp.MustCompile("TestStruct3")
-	specs, err := generator.DocumentStruct(compile, "github.com/mrahbar/gostruct2openapi/doc/testdata")
+	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct3"))
+	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/testdata")
 	assert.NoError(t, err)
 	assert.Len(t, specs, 2)
 
@@ -198,9 +193,8 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 }
 
 func Test_OpenapiGenerator_Struct4(t *testing.T) {
-	generator := NewOpenapiGenerator()
-	compile := regexp.MustCompile("TestStruct4")
-	specs, err := generator.DocumentStruct(compile, "github.com/mrahbar/gostruct2openapi/doc/testdata")
+	generator := NewOpenapiGenerator(regexp.MustCompile("TestStruct4"))
+	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/testdata")
 	assert.NoError(t, err)
 	assert.Len(t, specs, 1)
 
@@ -243,9 +237,8 @@ func Test_OpenapiGenerator_Struct4(t *testing.T) {
 }
 
 func Test_OpenapiGenerator_Method(t *testing.T) {
-	generator := NewOpenapiGenerator()
-	compile := regexp.MustCompile("httpHandler|resp")
-	specs, err := generator.DocumentStruct(compile, "github.com/mrahbar/gostruct2openapi/doc/testdata")
+	generator := NewOpenapiGenerator(regexp.MustCompile("httpHandler|resp"))
+	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/testdata")
 	assert.NoError(t, err)
 	assert.Len(t, specs, 3)
 

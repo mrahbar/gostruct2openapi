@@ -11,7 +11,7 @@ import (
 )
 
 type Generator interface {
-	DocumentStruct(filter *regexp.Regexp, _package ...string) ([]spec.Schema, error)
+	DocumentStruct(_package ...string) ([]spec.Schema, error)
 }
 
 type specField struct {
@@ -19,13 +19,14 @@ type specField struct {
 }
 
 type openapiGenerator struct {
+	filter *regexp.Regexp
 }
 
-func NewOpenapiGenerator() Generator {
-	return &openapiGenerator{}
+func NewOpenapiGenerator(filter *regexp.Regexp) Generator {
+	return &openapiGenerator{filter: filter}
 }
 
-func (o *openapiGenerator) DocumentStruct(filter *regexp.Regexp, _package ...string) ([]spec.Schema, error) {
+func (o *openapiGenerator) DocumentStruct(_package ...string) ([]spec.Schema, error) {
 	pkgs, err := loadPackages(_package...)
 	if err != nil {
 		return nil, err
@@ -34,82 +35,62 @@ func (o *openapiGenerator) DocumentStruct(filter *regexp.Regexp, _package ...str
 		return nil, fmt.Errorf("package %s load failed", _package)
 	}
 
-	return o.parse(pkgs, filter), nil
+	return o.parse(pkgs), nil
 }
 
-func (o *openapiGenerator) parse(pkgs []*packages.Package, filter *regexp.Regexp) (specs []spec.Schema) {
+func (o *openapiGenerator) parse(pkgs []*packages.Package) (specs []spec.Schema) {
 	for _, pkg := range pkgs {
-		commentMap := loadCommentMap(pkg, filter)
+		commentMap := loadCommentMap(pkg, o.filter)
 		scope := pkg.Types.Scope()
 
 		for _, structScopeName := range scope.Names() {
-			if !filter.MatchString(structScopeName) {
+			if !o.filter.MatchString(structScopeName) {
 				continue
 			}
-			obj := scope.Lookup(structScopeName)
-			if obj != nil && obj.Type() != nil && obj.Type().Underlying() != nil {
-				if _struct, ok := obj.Type().Underlying().(*types.Struct); ok { //skip if underlying scope is not a struct, e.g. interface
-					fmt.Printf("Processing struct: name=%s\n", structScopeName)
-					var props = spec.SchemaProps{ID: structScopeName, Type: []string{objectType}, Properties: make(spec.SchemaProperties)}
-					target := &targetStruct{
-						name:       structScopeName,
-						origType:   obj.Type(),
-						origStruct: _struct,
-					}
-					subSpecs := o.toSpec(&props, target, commentMap)
-					specs = append(specs, spec.Schema{SchemaProps: props})
-					for _, s := range subSpecs {
-						specs = append(specs, s)
-					}
-
-					_structTyp := obj.Type().(*types.Named)
-					for i := 0; i < _structTyp.NumMethods(); i++ {
-						scope := _structTyp.Method(i).Scope()
-						for _, methodScopeName := range scope.Names() {
-							if !filter.MatchString(methodScopeName) {
-								continue
-							}
-							obj := scope.Lookup(methodScopeName)
-							if obj != nil && obj.Type() != nil && obj.Type().Underlying() != nil {
-								if _struct, ok := obj.Type().Underlying().(*types.Struct); ok { //skip if underlying scope is not a struct, e.g. interface
-									fmt.Printf("Processing method struct: name=%s\n", methodScopeName)
-									var props = spec.SchemaProps{ID: methodScopeName, Type: []string{objectType}, Properties: make(spec.SchemaProperties)}
-									target := &targetStruct{
-										name:       methodScopeName,
-										origType:   obj.Type(),
-										origStruct: _struct,
-									}
-									subSpecs := o.toSpec(&props, target, commentMap)
-									specs = append(specs, spec.Schema{SchemaProps: props})
-									for _, s := range subSpecs {
-										specs = append(specs, s)
-									}
-								}
-							}
-						}
-					}
-				}
-
-			}
+			specs = o.processObj(targetType{structScopeName, scope.Lookup(structScopeName)}, commentMap)
 		}
 	}
 
 	return
 }
 
-type targetStruct struct {
-	name       string
-	origType   types.Type
-	origStruct *types.Struct
+func (o *openapiGenerator) processObj(target targetType, commentMap map[string]string) (specs []spec.Schema) {
+	if !target.isValid() || !target.isStruct() {
+		return
+	}
+
+	specs = append(specs, o.processTarget(target.toTargetStruct(), commentMap)...)
+	if target.isNamedType() {
+		specs = append(specs, o.processStructMethods(target.toNamedType(), commentMap)...)
+	}
+
+	return
 }
 
-type targetField struct {
-	structName  string
-	fieldTag    string
-	fieldName   string
-	specField   specField
-	elem        types.Type
-	isArrayType bool
+func (o *openapiGenerator) processTarget(target *targetStruct, commentMap map[string]string) (specs []spec.Schema) {
+	fmt.Printf("Processing struct: name=%s\n", target.name)
+	var props = spec.SchemaProps{ID: target.name, Type: []string{objectType}, Properties: make(spec.SchemaProperties)}
+	subSpecs := o.toSpec(&props, target, commentMap)
+	specs = append(specs, spec.Schema{SchemaProps: props})
+
+	for _, s := range subSpecs {
+		specs = append(specs, s)
+	}
+
+	return
+}
+
+func (o *openapiGenerator) processStructMethods(_structTyp *types.Named, commentMap map[string]string) (specs []spec.Schema) {
+	for i := 0; i < _structTyp.NumMethods(); i++ {
+		scope := _structTyp.Method(i).Scope()
+		for _, methodScopeName := range scope.Names() {
+			if !o.filter.MatchString(methodScopeName) {
+				continue
+			}
+			specs = o.processObj(targetType{methodScopeName, scope.Lookup(methodScopeName)}, commentMap)
+		}
+	}
+	return specs
 }
 
 func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *targetStruct, commentMap map[string]string) map[string]spec.Schema {
