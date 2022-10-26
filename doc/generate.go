@@ -2,7 +2,6 @@ package doc
 
 import (
 	"fmt"
-	"github.com/fatih/structtag"
 	"github.com/go-openapi/spec"
 	"go/types"
 	"golang.org/x/tools/go/packages"
@@ -15,16 +14,16 @@ type Generator interface {
 
 type openapiGenerator struct {
 	filter          *regexp.Regexp
-	structTags      []string
+	structTag       string
 	commentRegistry *CommentRegistry
 }
 
-func NewOpenapiGenerator(filter *regexp.Regexp, tags ...string) Generator {
+func NewOpenapiGenerator(filter *regexp.Regexp, tags string) Generator {
 	if len(tags) == 0 {
-		tags = append(tags, "json")
+		tags = "json"
 	}
 
-	return &openapiGenerator{filter: filter, structTags: tags, commentRegistry: newCommentRegistry()}
+	return &openapiGenerator{filter: filter, structTag: tags, commentRegistry: newCommentRegistry()}
 }
 
 func (o *openapiGenerator) DocumentStruct(_package ...string) ([]spec.Schema, error) {
@@ -216,41 +215,10 @@ func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target
 }
 
 func (o *openapiGenerator) mapField(props *spec.SchemaProps, target *targetField) {
-	var fieldName = target.fieldName
-	if len(target.fieldTag) > 0 {
-		if tags, err := structtag.Parse(target.fieldTag); err == nil {
-			for _, tp := range tags.Tags() {
-				if Contains(o.structTags, tp.Key) {
-					fieldName = tp.Name
-				}
-			}
-		}
-	}
-
-	schemaProps := spec.SchemaProps{
-		Format:      target.specField.format,
-		Description: o.commentRegistry.lookup(target.ID()),
-	}
-
-	if target.specField.baseType == arrayType {
-		var props spec.SchemaProps
-		if target.specField.ref != "" {
-			props = spec.SchemaProps{Ref: spec.MustCreateRef("#/components/schemas/" + target.specField.ref)}
-		} else if target.specField.itemsType != "" {
-			props = spec.SchemaProps{Type: []string{target.specField.itemsType}}
-		}
-		schemaProps.Type = []string{target.specField.baseType}
-		schemaProps.Items = &spec.SchemaOrArray{Schema: &spec.Schema{SchemaProps: props}}
-	} else {
-		if target.specField.ref != "" {
-			schemaProps.Ref = spec.MustCreateRef("#/components/schemas/" + target.specField.ref)
-		} else {
-			schemaProps.Type = []string{target.specField.baseType}
-		}
-	}
-
+	id := target.ID()
+	lookup := o.commentRegistry.lookup(id)
 	schema := spec.Schema{
-		SchemaProps: target.specField.toSchemaProp(o.commentRegistry.lookup(target.ID())),
+		SchemaProps: target.specField.toSchemaProp(lookup),
 	}
 	if target.additionalProperties.isValid() {
 		schema.AdditionalProperties = &spec.SchemaOrBool{
@@ -259,7 +227,7 @@ func (o *openapiGenerator) mapField(props *spec.SchemaProps, target *targetField
 			},
 		}
 	}
-	props.Properties[fieldName] = schema
+	props.Properties[target.CanonicalFieldName(o.structTag)] = schema
 }
 
 func (o *openapiGenerator) isTimeField(field types.Type) bool {

@@ -2,6 +2,7 @@ package doc
 
 import (
 	"fmt"
+	"github.com/fatih/structtag"
 	"github.com/go-openapi/spec"
 	"go/types"
 )
@@ -86,6 +87,21 @@ type targetField struct {
 
 func (t *targetField) ID() string {
 	return fmt.Sprintf("%s.%s.%s", t.packageID, t.structName, t.fieldName)
+}
+
+func (t *targetField) CanonicalFieldName(structTag string) string {
+	var fieldName = t.fieldName
+	if len(t.fieldTag) > 0 {
+		if tags, err := structtag.Parse(t.fieldTag); err == nil {
+			for _, tp := range tags.Tags() {
+				if tp.Key == structTag {
+					fieldName = tp.Name
+				}
+			}
+		}
+	}
+
+	return fieldName
 }
 
 type specField struct {

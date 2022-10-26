@@ -93,6 +93,8 @@ type TestStruct3 struct {
 	FieldI chan bool
 	//FieldJ comment
 	FieldJ MyString
+	//FieldK comment
+	FieldK map[string]*TestUnderlyingStruct
 }
 
 //@title Test Struct 4

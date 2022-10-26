@@ -173,17 +173,26 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 					"type": "string"
 				},
 				"FieldH": {
+					"description": "FieldH comment",
 					"additionalProperties": {
 						"type": "string"
 					},
 					"type": "object"
 				},
 				"FieldI": {
+					"description": "FieldI comment",
 					"type": "object"
 				},
 				"FieldJ": {
 					"description": "FieldJ comment",
 					"type": "string"
+				},
+				"FieldK": {
+					"description": "FieldK comment",
+					"additionalProperties": {
+						"$ref": "#/components/schemas/TestUnderlyingStruct"
+					},
+					"type": "object"
 				}
 			},
 			"type":"object"

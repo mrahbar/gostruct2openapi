@@ -74,7 +74,7 @@ func (c *CommentRegistry) load(pkgs ...*packages.Package) {
 					case *ast.StructType:
 						for _, field := range _struct.Fields.List {
 							switch field.Type.(type) {
-							case *ast.Ident, *ast.ArrayType:
+							case *ast.Ident, *ast.ArrayType, *ast.MapType, *ast.ChanType, *ast.InterfaceType, *ast.StructType:
 								for _, name := range field.Names {
 									if f, ok := name.Obj.Decl.(*ast.Field); ok && len(f.Doc.Text()) > 0 {
 										tf := &targetField{fieldName: name.Name, structName: structName, packageID: pkg.ID}
