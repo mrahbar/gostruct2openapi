@@ -67,6 +67,8 @@ type TestStruct2 struct {
 	FieldD []bool
 }
 
+type MyString string
+
 //@title Test Struct 3
 type TestStruct3 struct {
 	//TestBaseStruct comment
@@ -85,6 +87,12 @@ type TestStruct3 struct {
 	FieldF TestBaseInterface
 	//FieldG comment
 	FieldG *time.Time
+	//FieldH comment
+	FieldH map[string]string
+	//FieldI comment
+	FieldI chan bool
+	//FieldJ comment
+	FieldJ MyString
 }
 
 //@title Test Struct 4

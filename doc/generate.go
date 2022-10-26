@@ -13,10 +13,6 @@ type Generator interface {
 	DocumentStruct(_package ...string) ([]spec.Schema, error)
 }
 
-type specField struct {
-	baseType, itemsType, format, ref string
-}
-
 type openapiGenerator struct {
 	filter          *regexp.Regexp
 	structTags      []string
@@ -135,8 +131,13 @@ func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *targetStruct)
 			}
 
 			switch u := underlying.(type) {
-			case *types.Interface:
-				// falling back to object type because handling of interface type is not possible
+			case *types.Map:
+				tf.specField = specField{baseType: objectType}
+				tf.isAdditionalProperties = true
+				tf.elem = u.Elem()
+				specs.Extend(o.handleUnderlyingField(props, tf))
+			case *types.Interface, *types.Chan:
+				// falling back to object type because handling of type is not possible
 				tf.specField = specField{baseType: objectType}
 				o.mapField(props, tf)
 			case *types.Struct:
@@ -164,37 +165,50 @@ func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *targetStruct)
 func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target *targetField) SpecRegistry {
 	specs := make(SpecRegistry)
 
-	if _underlyingStruct, ok := target.elem.Underlying().(*types.Pointer); ok {
-		target.elem = _underlyingStruct.Elem()
+	switch u := target.elem.Underlying().(type) {
+	case *types.Pointer:
+		target.elem = u.Elem()
 		return o.handleUnderlyingField(props, target)
-	} else if _underlyingStruct, ok := target.elem.Underlying().(*types.Struct); ok {
+	case *types.Struct:
 		field := target.elem.(*types.Named).Obj()
 		name := field.Name()
-		_specField := specField{ref: name}
+		sf := specField{ref: name}
 		if target.isArrayType {
-			_specField.baseType = arrayType
+			sf.baseType = arrayType
 		}
-		target.specField = _specField
-		o.mapField(props, target)
-		specs.Extend(o.processTarget(newTargetStruct(name, field.Type(), _underlyingStruct)))
-	} else if _underlyingBasic, ok := target.elem.Underlying().(*types.Basic); ok {
-		var _specField specField
-		if target.isArrayType {
-			_specField = specField{baseType: arrayType, itemsType: structFieldTypeMap[_underlyingBasic.String()].baseType}
+		if target.isAdditionalProperties {
+			target.additionalProperties = sf
 		} else {
-			_specField = structFieldTypeMap[_underlyingBasic.String()]
+			target.specField = sf
 		}
-		target.specField = _specField
 		o.mapField(props, target)
-	} else {
+		specs.Extend(o.processTarget(newTargetStruct(name, field.Type(), u)))
+	case *types.Basic:
+		var sf specField
+		if target.isArrayType {
+			sf = specField{baseType: arrayType, itemsType: structFieldTypeMap[u.String()].baseType}
+		} else {
+			sf = structFieldTypeMap[u.String()]
+		}
+		if target.isAdditionalProperties {
+			target.additionalProperties = sf
+		} else {
+			target.specField = sf
+		}
+		o.mapField(props, target)
+	default:
 		fmt.Printf("has no basic type but %s", target.elem.Underlying().String())
-		var _specField specField
+		var sf specField
 		if target.isArrayType {
-			_specField = specField{baseType: arrayType, itemsType: objectType}
+			sf = specField{baseType: arrayType, itemsType: objectType}
 		} else {
-			_specField = specField{baseType: objectType}
+			sf = specField{baseType: objectType}
 		}
-		target.specField = _specField
+		if target.isAdditionalProperties {
+			target.additionalProperties = sf
+		} else {
+			target.specField = sf
+		}
 		o.mapField(props, target)
 	}
 
@@ -235,9 +249,17 @@ func (o *openapiGenerator) mapField(props *spec.SchemaProps, target *targetField
 		}
 	}
 
-	props.Properties[fieldName] = spec.Schema{
-		SchemaProps: schemaProps,
+	schema := spec.Schema{
+		SchemaProps: target.specField.toSchemaProp(o.commentRegistry.lookup(target.ID())),
 	}
+	if target.additionalProperties.isValid() {
+		schema.AdditionalProperties = &spec.SchemaOrBool{
+			Schema: &spec.Schema{
+				SchemaProps: target.additionalProperties.toSchemaProp(""),
+			},
+		}
+	}
+	props.Properties[fieldName] = schema
 }
 
 func (o *openapiGenerator) isTimeField(field types.Type) bool {

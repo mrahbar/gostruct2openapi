@@ -2,6 +2,7 @@ package doc
 
 import (
 	"fmt"
+	"github.com/go-openapi/spec"
 	"go/types"
 )
 
@@ -72,15 +73,51 @@ func (t *targetStruct) toNamedType() *types.Named {
 }
 
 type targetField struct {
-	packageID   string
-	structName  string
-	fieldTag    string
-	fieldName   string
-	specField   specField
-	elem        types.Type
-	isArrayType bool
+	packageID              string
+	structName             string
+	fieldTag               string
+	fieldName              string
+	specField              specField
+	additionalProperties   specField
+	elem                   types.Type
+	isArrayType            bool
+	isAdditionalProperties bool
 }
 
 func (t *targetField) ID() string {
 	return fmt.Sprintf("%s.%s.%s", t.packageID, t.structName, t.fieldName)
+}
+
+type specField struct {
+	baseType, itemsType, format, ref string
+}
+
+func (s specField) isValid() bool {
+	return s.format != "" || s.ref != "" || s.baseType != ""
+}
+
+func (s specField) toSchemaProp(description string) spec.SchemaProps {
+	schemaProps := spec.SchemaProps{
+		Format:      s.format,
+		Description: description,
+	}
+
+	if s.baseType == arrayType {
+		var props spec.SchemaProps
+		if s.ref != "" {
+			props = spec.SchemaProps{Ref: spec.MustCreateRef("#/components/schemas/" + s.ref)}
+		} else if s.itemsType != "" {
+			props = spec.SchemaProps{Type: []string{s.itemsType}}
+		}
+		schemaProps.Type = []string{s.baseType}
+		schemaProps.Items = &spec.SchemaOrArray{Schema: &spec.Schema{SchemaProps: props}}
+	} else {
+		if s.ref != "" {
+			schemaProps.Ref = spec.MustCreateRef("#/components/schemas/" + s.ref)
+		} else {
+			schemaProps.Type = []string{s.baseType}
+		}
+	}
+
+	return schemaProps
 }
