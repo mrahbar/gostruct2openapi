@@ -24,7 +24,7 @@ type TestOtherUnderlyingStruct struct {
 	UnderlyingFieldD bool
 }
 
-//@title Test Other Struct 4
+//@title Test Other Struct 5
 type TestOtherStruct5 struct {
 	TestOtherBaseStruct
 	//FieldA comment

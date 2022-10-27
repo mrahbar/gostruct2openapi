@@ -22,6 +22,7 @@ func Test_OpenapiGenerator_Struct0(t *testing.T) {
 	bytes, err := specs[0].MarshalJSON()
 	assert.NoError(t, err)
 	assert.JSONEq(t, `{
+		"description":"@title Test Struct 0",
 		"id": "testStruct0",
 		"type":"object",
 		"properties": {
@@ -47,6 +48,7 @@ func Test_OpenapiGenerator_Struct1(t *testing.T) {
 	bytes, err := specs[0].MarshalJSON()
 	assert.NoError(t, err)
 	assert.JSONEq(t, `{
+		"description":"@title Test Struct 1",
 		"id": "TestStruct1",
 		"type":"object",
 		"properties": {
@@ -75,6 +77,7 @@ func Test_OpenapiGenerator_Struct2(t *testing.T) {
 	bytes, err := specs[0].MarshalJSON()
 	assert.NoError(t, err)
 	assert.JSONEq(t, `{
+		"description":"@title Test Struct 2",
 		"id": "TestStruct2",
 		"type":"object",
 		"properties": {
@@ -125,6 +128,7 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 	assert.NoError(t, err)
 	assert.JSONEq(t, `[
 		{
+			"description":"@title Test Struct 3",
 			"id": "TestStruct3",
 			"properties": {
 				"BaseFieldB": {
@@ -200,6 +204,7 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 			"type":"object"
 		},
 		{
+			"description":"@title Test Underlying Struct",
 			"id": "TestUnderlyingStruct",
 			"properties": {
 				"UnderlyingFieldB": {
@@ -229,6 +234,7 @@ func Test_OpenapiGenerator_Struct4(t *testing.T) {
 	bytes, err := specs[0].MarshalJSON()
 	assert.NoError(t, err)
 	assert.JSONEq(t, `{
+		"description":"@title Test Struct 4",
 		"id": "TestStruct4",
 		"type":"object",
 		"properties": {
@@ -273,6 +279,7 @@ func Test_OpenapiGenerator_Method(t *testing.T) {
 	bytes, err := json.Marshal(specs)
 	assert.NoError(t, err)
 	assert.JSONEq(t, `[{
+		"description":"@title Test Other Struct 5",
         "id": "TestOtherStruct5",
         "properties": {
             "BaseFieldB": {
@@ -315,6 +322,7 @@ func Test_OpenapiGenerator_Method(t *testing.T) {
         },
         "type": "object"
     }, {
+		"description":"@title Test OtherUnderlying Struct",
         "id": "TestOtherUnderlyingStruct",
         "properties": {
             "UnderlyingFieldB": {
@@ -332,6 +340,7 @@ func Test_OpenapiGenerator_Method(t *testing.T) {
         },
         "type": "object"
     }, {
+		"description":"@title Test Struct 4",
         "id": "TestStruct4",
         "properties": {
             "otherFieldA": {
@@ -365,6 +374,7 @@ func Test_OpenapiGenerator_Method(t *testing.T) {
         },
         "type": "object"
     }, {
+		"description":"@title HTTP Handler",
         "id": "httpHandler",
         "type": "object"
     }, {
