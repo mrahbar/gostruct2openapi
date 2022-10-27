@@ -148,7 +148,8 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 					"description": "FieldB comment"
 				},
 				"FieldC": {
-					"$ref": "#/components/schemas/TestUnderlyingStruct"
+					"$ref": "#/components/schemas/TestUnderlyingStruct",
+					"description": "FieldC comment"
 				},
 				"FieldD": {
 					"description": "FieldD comment",
@@ -169,6 +170,7 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 					"type": "object"
 				},
 				"FieldG": {
+					"description": "FieldG comment",
 					"format": "RFC3339",
 					"type": "string"
 				},

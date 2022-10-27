@@ -76,7 +76,7 @@ func (o *openapiGenerator) processTarget(target *targetStruct) SpecRegistry {
 			o.commentRegistry.load(pkgs...)
 		}
 	}
-	var props = spec.SchemaProps{ID: target.name, Type: []string{objectType}, Properties: make(spec.SchemaProperties)}
+	var props = spec.SchemaProps{ID: target.name, Type: []string{objectType}, Description: o.commentRegistry.lookup(target.ID()), Properties: make(spec.SchemaProperties)}
 	specs := make(SpecRegistry)
 	specs.AddSchemaProp(target.name, props)
 	specs.Extend(o.toSpec(&props, target))

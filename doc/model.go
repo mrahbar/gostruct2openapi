@@ -64,6 +64,13 @@ func newTargetStruct(name string, origType types.Type, origStruct *types.Struct)
 	return &targetStruct{name: name, origType: origType, origStruct: origStruct}
 }
 
+func (t *targetStruct) ID() string {
+	if t.isNamedType() {
+		obj := t.toNamedType().Obj()
+		return fmt.Sprintf("%s.%s", obj.Pkg().Path(), obj.Name())
+	}
+	return t.name
+}
 func (t *targetStruct) isNamedType() bool {
 	_, ok := t.origType.(*types.Named)
 	return ok
