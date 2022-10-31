@@ -16,6 +16,7 @@ type openapiGenerator struct {
 	filter          *regexp.Regexp
 	structTag       string
 	commentRegistry *CommentRegistry
+	metadataParser  *MetadataParser
 }
 
 func NewOpenapiGenerator(filter *regexp.Regexp, tags string) Generator {
@@ -23,7 +24,7 @@ func NewOpenapiGenerator(filter *regexp.Regexp, tags string) Generator {
 		tags = "json"
 	}
 
-	return &openapiGenerator{filter: filter, structTag: tags, commentRegistry: newCommentRegistry()}
+	return &openapiGenerator{filter: filter, structTag: tags, commentRegistry: newCommentRegistry(), metadataParser: newMetadataParser()}
 }
 
 func (o *openapiGenerator) DocumentStruct(_package ...string) ([]spec.Schema, error) {
@@ -76,9 +77,11 @@ func (o *openapiGenerator) processTarget(target *targetStruct) SpecRegistry {
 			o.commentRegistry.load(pkgs...)
 		}
 	}
-	var props = spec.SchemaProps{ID: target.name, Type: []string{objectType}, Description: o.commentRegistry.lookup(target.ID()), Properties: make(spec.SchemaProperties)}
+
+	metadata := o.metadataParser.parseStructDesc(o.commentRegistry.lookup(target.ID()))
+	var props = spec.SchemaProps{ID: metadata.lookup(titleAttr, target.name), Type: []string{objectType}, Description: cleanDescription(metadata.lookup(descriptionAttr, "")), Properties: make(spec.SchemaProperties)}
 	specs := make(SpecRegistry)
-	specs.AddSchemaProp(target.name, props)
+	specs.AddSchemaProp(props)
 	specs.Extend(o.toSpec(&props, target))
 
 	return specs
@@ -123,7 +126,7 @@ func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *targetStruct)
 			}
 
 			//early handling of time.Time due to underlying type is actually a struct
-			if o.isTimeField(field.Type()) {
+			if isTimeField(field.Type()) {
 				tf.specField = structFieldTypeMap["time.Time"]
 				o.mapField(props, tf)
 				continue
@@ -215,10 +218,8 @@ func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target
 }
 
 func (o *openapiGenerator) mapField(props *spec.SchemaProps, target *targetField) {
-	id := target.ID()
-	lookup := o.commentRegistry.lookup(id)
 	schema := spec.Schema{
-		SchemaProps: target.specField.toSchemaProp(lookup),
+		SchemaProps: target.specField.toSchemaProp(cleanDescription(o.commentRegistry.lookup(target.ID()))),
 	}
 	if target.additionalProperties.isValid() {
 		schema.AdditionalProperties = &spec.SchemaOrBool{
@@ -228,15 +229,4 @@ func (o *openapiGenerator) mapField(props *spec.SchemaProps, target *targetField
 		}
 	}
 	props.Properties[target.CanonicalFieldName(o.structTag)] = schema
-}
-
-func (o *openapiGenerator) isTimeField(field types.Type) bool {
-	switch u := field.(type) {
-	case *types.Named:
-		return u.Obj().Name() == "Time" && u.Obj().Pkg().Name() == "time"
-	case *types.Pointer:
-		return o.isTimeField(u.Elem())
-	}
-
-	return false
 }

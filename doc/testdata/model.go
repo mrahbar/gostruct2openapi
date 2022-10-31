@@ -11,6 +11,7 @@ type TestBaseInterface interface {
 
 //@title Test Base Struct
 //@resp test
+//Test Base description
 type TestBaseStruct struct {
 	//baseFieldB comment
 	baseFieldB string
@@ -23,6 +24,7 @@ type TestBaseStruct struct {
 }
 
 //@title Test Underlying Struct
+//Test Underlying Struct description
 type TestUnderlyingStruct struct {
 	//underlyingFieldB comment
 	underlyingFieldB string
@@ -35,6 +37,7 @@ type TestUnderlyingStruct struct {
 }
 
 //@title Test Struct 0
+//Test Struct 0 description
 type testStruct0 struct {
 	fieldA string
 	FieldB string
@@ -43,6 +46,7 @@ type testStruct0 struct {
 }
 
 //@title Test Struct 1
+//Test Struct 1 description
 type TestStruct1 struct {
 	//fieldA comment
 	fieldA string
@@ -55,6 +59,7 @@ type TestStruct1 struct {
 }
 
 //@title Test Struct 2
+//Test Struct 2 description
 type TestStruct2 struct {
 	//TestBaseStruct comment
 	TestBaseStruct
@@ -68,9 +73,11 @@ type TestStruct2 struct {
 	FieldD []bool
 }
 
+//MyString description
 type MyString string
 
 //@title Test Struct 3
+//Test Struct 3 description
 type TestStruct3 struct {
 	//TestBaseStruct comment
 	TestBaseStruct
@@ -99,7 +106,8 @@ type TestStruct3 struct {
 }
 
 //@title Test Struct 4
-type TestStruct4 struct {
+//Test Struct 4 description
+type TestStruct4 struct { //TODO add required tag
 	//FieldA comment
 	FieldA []string `json:"otherFieldA"`
 	//FieldB comment
@@ -110,15 +118,18 @@ type TestStruct4 struct {
 	FieldD []bool `json:"otherFieldD"`
 }
 
+//@title MyAsset
+//MyAsset description
+type httpHandlerResp struct {
+	TestStructs  []*TestStruct4               `json:"structs"`
+	OtherStructs []*testdata.TestOtherStruct5 `json:"other_structs"`
+}
+
 //@title HTTP Handler
 type httpHandler struct {
 }
 
 func (g *httpHandler) handleRequest() {
-	//@title MyAsset
-	var resp struct {
-		TestStructs  []*TestStruct4               `json:"structs"`
-		OtherStructs []*testdata.TestOtherStruct5 `json:"other_structs"`
-	}
-	fmt.Println(resp)
+	var resp2 httpHandlerResp
+	fmt.Println(resp2)
 }

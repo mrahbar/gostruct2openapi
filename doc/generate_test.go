@@ -22,8 +22,8 @@ func Test_OpenapiGenerator_Struct0(t *testing.T) {
 	bytes, err := specs[0].MarshalJSON()
 	assert.NoError(t, err)
 	assert.JSONEq(t, `{
-		"description":"@title Test Struct 0",
-		"id": "testStruct0",
+		"description":"Test Struct 0 description",
+		"id": "Test Struct 0",
 		"type":"object",
 		"properties": {
 			"FieldB": {
@@ -48,8 +48,8 @@ func Test_OpenapiGenerator_Struct1(t *testing.T) {
 	bytes, err := specs[0].MarshalJSON()
 	assert.NoError(t, err)
 	assert.JSONEq(t, `{
-		"description":"@title Test Struct 1",
-		"id": "TestStruct1",
+		"description":"Test Struct 1 description",
+		"id": "Test Struct 1",
 		"type":"object",
 		"properties": {
 			"FieldB": {
@@ -77,8 +77,8 @@ func Test_OpenapiGenerator_Struct2(t *testing.T) {
 	bytes, err := specs[0].MarshalJSON()
 	assert.NoError(t, err)
 	assert.JSONEq(t, `{
-		"description":"@title Test Struct 2",
-		"id": "TestStruct2",
+		"description":"Test Struct 2 description",
+		"id": "Test Struct 2",
 		"type":"object",
 		"properties": {
 			"BaseFieldB": {
@@ -128,8 +128,8 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 	assert.NoError(t, err)
 	assert.JSONEq(t, `[
 		{
-			"description":"@title Test Struct 3",
-			"id": "TestStruct3",
+			"description":"Test Struct 3 description",
+			"id": "Test Struct 3",
 			"properties": {
 				"BaseFieldB": {
 					"description": "BaseFieldB comment",
@@ -204,8 +204,8 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 			"type":"object"
 		},
 		{
-			"description":"@title Test Underlying Struct",
-			"id": "TestUnderlyingStruct",
+			"description":"Test Underlying Struct description",
+			"id": "Test Underlying Struct",
 			"properties": {
 				"UnderlyingFieldB": {
 					"description": "UnderlyingFieldB comment",
@@ -234,8 +234,8 @@ func Test_OpenapiGenerator_Struct4(t *testing.T) {
 	bytes, err := specs[0].MarshalJSON()
 	assert.NoError(t, err)
 	assert.JSONEq(t, `{
-		"description":"@title Test Struct 4",
-		"id": "TestStruct4",
+		"description":"Test Struct 4 description",
+		"id": "Test Struct 4",
 		"type":"object",
 		"properties": {
 			"otherFieldA": {
@@ -278,123 +278,128 @@ func Test_OpenapiGenerator_Method(t *testing.T) {
 
 	bytes, err := json.Marshal(specs)
 	assert.NoError(t, err)
-	assert.JSONEq(t, `[{
-		"description":"@title Test Other Struct 5",
-        "id": "TestOtherStruct5",
-        "properties": {
-            "BaseFieldB": {
-                "description": "BaseFieldB comment",
-                "type": "string"
-            },
-            "BaseFieldC": {
-                "description": "BaseFieldC comment",
-                "type": "number"
-            },
-            "BaseFieldD": {
-                "description": "BaseFieldD comment",
-                "type": "boolean"
-            },
-            "otherFieldA": {
-                "description": "FieldA comment",
-                "items": {
-                    "type": "string"
-                },
-                "type": "array"
-            },
-            "otherFieldB": {
-                "$ref": "#/components/schemas/TestOtherUnderlyingStruct",
-                "description": "FieldB comment"
-            },
-            "otherFieldC": {
-                "description": "FieldC comment",
-                "items": {
-                    "type": "integer"
-                },
-                "type": "array"
-            },
-            "otherFieldD": {
-                "description": "FieldD comment",
-                "items": {
-                    "type": "boolean"
-                },
-                "type": "array"
-            }
-        },
-        "type": "object"
-    }, {
-		"description":"@title Test OtherUnderlying Struct",
-        "id": "TestOtherUnderlyingStruct",
-        "properties": {
-            "UnderlyingFieldB": {
-                "description": "UnderlyingFieldB comment",
-                "type": "string"
-            },
-            "UnderlyingFieldC": {
-                "description": "UnderlyingFieldC comment",
-                "type": "number"
-            },
-            "UnderlyingFieldD": {
-                "description": "UnderlyingFieldD comment",
-                "type": "boolean"
-            }
-        },
-        "type": "object"
-    }, {
-		"description":"@title Test Struct 4",
-        "id": "TestStruct4",
-        "properties": {
-            "otherFieldA": {
-                "description": "FieldA comment",
-                "items": {
-                    "type": "string"
-                },
-                "type": "array"
-            },
-            "otherFieldB": {
-                "description": "FieldB comment",
-                "items": {
-                    "type": "string"
-                },
-                "type": "array"
-            },
-            "otherFieldC": {
-                "description": "FieldC comment",
-                "items": {
-                    "type": "integer"
-                },
-                "type": "array"
-            },
-            "otherFieldD": {
-                "description": "FieldD comment",
-                "items": {
-                    "type": "boolean"
-                },
-                "type": "array"
-            }
-        },
-        "type": "object"
-    }, {
-		"description":"@title HTTP Handler",
-        "id": "httpHandler",
-        "type": "object"
-    }, {
-        "id": "resp",
-        "properties": {
-            "other_structs": {
-                "items": {
-                    "$ref": "#/components/schemas/TestOtherStruct5"
-                },
-                "type": "array"
-            },
-            "structs": {
-                "items": {
-                    "$ref": "#/components/schemas/TestStruct4"
-                },
-                "type": "array"
-            }
-        },
-        "type": "object"
-    }
-]
+	assert.JSONEq(t, `[
+		{
+			"id": "HTTP Handler",
+			"type": "object"
+		},
+		{
+			"description": "MyAsset description",
+			"id": "MyAsset",
+			"properties": {
+				"other_structs": {
+					"items": {
+						"$ref": "#/components/schemas/TestOtherStruct5"
+					},
+					"type": "array"
+				},
+				"structs": {
+					"items": {
+						"$ref": "#/components/schemas/TestStruct4"
+					},
+					"type": "array"
+				}
+			},
+			"type": "object"
+		},
+		{
+			"description": "Test Other Struct 5 description",
+			"id": "Test Other Struct 5",
+			"properties": {
+				"BaseFieldB": {
+					"description": "BaseFieldB comment",
+					"type": "string"
+				},
+				"BaseFieldC": {
+					"description": "BaseFieldC comment",
+					"type": "number"
+				},
+				"BaseFieldD": {
+					"description": "BaseFieldD comment",
+					"type": "boolean"
+				},
+				"otherFieldA": {
+					"description": "FieldA comment",
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				"otherFieldB": {
+					"$ref": "#/components/schemas/TestOtherUnderlyingStruct",
+					"description": "FieldB comment"
+				},
+				"otherFieldC": {
+					"description": "FieldC comment",
+					"items": {
+						"type": "integer"
+					},
+					"type": "array"
+				},
+				"otherFieldD": {
+					"description": "FieldD comment",
+					"items": {
+						"type": "boolean"
+					},
+					"type": "array"
+				}
+			},
+			"type": "object"
+		},
+		{
+			"description": "Test OtherUnderlying description",
+			"id": "Test OtherUnderlying Struct",
+			"properties": {
+				"UnderlyingFieldB": {
+					"description": "UnderlyingFieldB comment",
+					"type": "string"
+				},
+				"UnderlyingFieldC": {
+					"description": "UnderlyingFieldC comment",
+					"type": "number"
+				},
+				"UnderlyingFieldD": {
+					"description": "UnderlyingFieldD comment",
+					"type": "boolean"
+				}
+			},
+			"type": "object"
+		},
+		{
+			"description": "Test Struct 4 description",
+			"id": "Test Struct 4",
+			"properties": {
+				"otherFieldA": {
+					"description": "FieldA comment",
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				"otherFieldB": {
+					"description": "FieldB comment",
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				"otherFieldC": {
+					"description": "FieldC comment",
+					"items": {
+						"type": "integer"
+					},
+					"type": "array"
+				},
+				"otherFieldD": {
+					"description": "FieldD comment",
+					"items": {
+						"type": "boolean"
+					},
+					"type": "array"
+				}
+			},
+			"type": "object"
+		}
+	]
 `, string(bytes))
 }

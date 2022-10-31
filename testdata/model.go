@@ -1,6 +1,7 @@
 package testdata
 
 //@title Test Other Base Struct
+//Test Other Base Struct description
 type TestOtherBaseStruct struct {
 	//baseFieldB comment
 	baseFieldB string
@@ -13,6 +14,7 @@ type TestOtherBaseStruct struct {
 }
 
 //@title Test OtherUnderlying Struct
+//Test OtherUnderlying description
 type TestOtherUnderlyingStruct struct {
 	//underlyingFieldB comment
 	underlyingFieldB string
@@ -25,6 +27,7 @@ type TestOtherUnderlyingStruct struct {
 }
 
 //@title Test Other Struct 5
+//Test Other Struct 5 description
 type TestOtherStruct5 struct {
 	TestOtherBaseStruct
 	//FieldA comment

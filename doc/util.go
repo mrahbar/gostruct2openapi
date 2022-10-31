@@ -1,5 +1,10 @@
 package doc
 
+import (
+	"go/types"
+	"strings"
+)
+
 func IndexOf[T comparable](arr []T, elem T) int {
 	for i := range arr {
 		if arr[i] == elem {
@@ -25,4 +30,19 @@ func Deduplicate[T comparable](s []T) []T {
 		j++
 	}
 	return s[:j]
+}
+
+func cleanDescription(desc string) string {
+	return strings.Replace(desc, "\n", "", -1)
+}
+
+func isTimeField(field types.Type) bool {
+	switch u := field.(type) {
+	case *types.Named:
+		return u.Obj().Name() == "Time" && u.Obj().Pkg().Name() == "time"
+	case *types.Pointer:
+		return isTimeField(u.Elem())
+	}
+
+	return false
 }

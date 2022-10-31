@@ -2,56 +2,10 @@ package doc
 
 import (
 	"fmt"
-	"github.com/go-openapi/spec"
 	"go/ast"
 	"go/doc"
 	"golang.org/x/tools/go/packages"
-	"sort"
-	"strings"
 )
-
-const (
-	arrayType   = "array"
-	objectType  = "object"
-	booleanType = "boolean"
-	integerType = "integer"
-	numberType  = "number"
-	stringType  = "string"
-
-	timeFormat = "RFC3339"
-)
-
-var structFieldTypeMap = map[string]specField{
-	"string":    {baseType: stringType},
-	"int":       {baseType: integerType},
-	"float32":   {baseType: numberType},
-	"float64":   {baseType: numberType},
-	"bool":      {baseType: booleanType},
-	"time.Time": {baseType: stringType, format: timeFormat},
-}
-
-type SpecRegistry map[string]spec.Schema
-
-func (s SpecRegistry) AddSchemaProp(key string, props spec.SchemaProps) {
-	s[key] = spec.Schema{SchemaProps: props}
-}
-
-func (s SpecRegistry) Extend(r SpecRegistry) {
-	for k, v := range r {
-		s[k] = v
-	}
-}
-
-func (s SpecRegistry) Values() (specs []spec.Schema) {
-	for _, v := range s {
-		specs = append(specs, v)
-	}
-
-	sort.Slice(specs, func(i, j int) bool {
-		return specs[i].ID < specs[j].ID
-	})
-	return
-}
 
 type CommentRegistry struct {
 	loadedPackages []string
@@ -77,9 +31,10 @@ func (c *CommentRegistry) loadStructComments(pkg *packages.Package) {
 	//transform package.Package to ast.Package
 	//note that only the necessary fields are set used by go/doc
 	a := &ast.Package{Name: pkg.ID, Files: make(map[string]*ast.File)}
-	for _, s := range pkg.Syntax {
-		a.Files[s.Name.String()] = s
+	for k, s := range pkg.Syntax {
+		a.Files[fmt.Sprintf("%s_%d", s.Name.String(), k)] = s
 	}
+
 	p := doc.New(a, ".", doc.AllDecls)
 	for _, t := range p.Types {
 		if len(t.Doc) > 0 {
@@ -120,5 +75,5 @@ func (c *CommentRegistry) loadStructFieldComments(pkg *packages.Package) {
 }
 
 func (c *CommentRegistry) lookup(key string) string {
-	return strings.Replace(c.registry[key], "\n", "", -1)
+	return c.registry[key]
 }
