@@ -137,6 +137,7 @@ func (s specField) toSchemaProp(description string) spec.SchemaProps {
 	} else {
 		if s.ref != "" {
 			schemaProps.Ref = spec.MustCreateRef("#/components/schemas/" + s.ref)
+			schemaProps.Description = "" //Property 'description' is not allowed for $ref
 		} else {
 			schemaProps.Type = []string{s.baseType}
 		}
