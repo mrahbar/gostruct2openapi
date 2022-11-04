@@ -10,7 +10,6 @@ type TestBaseInterface interface {
 }
 
 //@title Test Base Struct
-//@resp test
 //Test Base description
 type TestBaseStruct struct {
 	//baseFieldB comment
