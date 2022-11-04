@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func IndexOf[T comparable](arr []T, elem T) int {
+func IndexOf(arr []string, elem string) int {
 	for i := range arr {
 		if arr[i] == elem {
 			return i
@@ -14,22 +14,8 @@ func IndexOf[T comparable](arr []T, elem T) int {
 	return -1
 }
 
-func Contains[T comparable](arr []T, elem T) bool {
+func Contains(arr []string, elem string) bool {
 	return arr != nil && IndexOf(arr, elem) != -1
-}
-
-func Deduplicate[T comparable](s []T) []T {
-	seen := make(map[T]struct{}, len(s))
-	j := 0
-	for _, v := range s {
-		if _, ok := seen[v]; ok {
-			continue
-		}
-		seen[v] = struct{}{}
-		s[j] = v
-		j++
-	}
-	return s[:j]
 }
 
 func cleanDescription(desc string) string {

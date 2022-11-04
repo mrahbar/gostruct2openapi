@@ -1,6 +1,6 @@
 module github.com/mrahbar/gostruct2openapi
 
-go 1.18
+go 1.16
 
 require (
 	github.com/fatih/structtag v1.2.0
