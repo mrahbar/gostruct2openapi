@@ -148,12 +148,10 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 					"type": "string"
 				},
 				"FieldB": {
-					"$ref": "#/components/schemas/TestUnderlyingStruct",
-					"description": "FieldB comment"
+					"$ref": "#/components/schemas/TestUnderlyingStruct"
 				},
 				"FieldC": {
-					"$ref": "#/components/schemas/TestUnderlyingStruct",
-					"description": "FieldC comment"
+					"$ref": "#/components/schemas/TestUnderlyingStruct"
 				},
 				"FieldD": {
 					"description": "FieldD comment",
@@ -326,8 +324,7 @@ func Test_OpenapiGenerator_Method(t *testing.T) {
 					"type": "array"
 				},
 				"otherFieldB": {
-					"$ref": "#/components/schemas/TestOtherUnderlyingStruct",
-					"description": "FieldB comment"
+					"$ref": "#/components/schemas/TestOtherUnderlyingStruct"
 				},
 				"otherFieldC": {
 					"description": "FieldC comment",
