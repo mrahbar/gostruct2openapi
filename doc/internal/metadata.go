@@ -1,4 +1,4 @@
-package doc
+package internal
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ func (s StructMetadata) append(key string, value string) {
 	}
 }
 
-func (s StructMetadata) lookup(key string, _default string) string {
+func (s StructMetadata) Lookup(key string, _default string) string {
 	if v, exists := s[key]; exists {
 		return v
 	} else {
@@ -25,18 +25,18 @@ func (s StructMetadata) lookup(key string, _default string) string {
 
 const (
 	metadataToken   = "@"
-	descriptionAttr = "@description"
-	titleAttr       = "@title"
+	DescriptionAttr = "@description"
+	TitleAttr       = "@title"
 )
 
 type MetadataParser struct {
 }
 
-func newMetadataParser() *MetadataParser {
+func NewMetadataParser() *MetadataParser {
 	return &MetadataParser{}
 }
 
-func (o *MetadataParser) parseStructDesc(desc string) StructMetadata {
+func (o *MetadataParser) ParseStructDesc(desc string) StructMetadata {
 	out := make(StructMetadata)
 	comments := strings.Split(desc, "\n")
 
@@ -48,7 +48,7 @@ func (o *MetadataParser) parseStructDesc(desc string) StructMetadata {
 		if strings.HasPrefix(attribute, metadataToken) {
 			out.append(attribute, value)
 		} else {
-			out.append(descriptionAttr, commentLine)
+			out.append(DescriptionAttr, commentLine)
 		}
 	}
 

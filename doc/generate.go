@@ -3,11 +3,16 @@ package doc
 import (
 	"fmt"
 	"github.com/go-openapi/spec"
+	"github.com/mrahbar/gostruct2openapi/doc/internal"
+	"github.com/mrahbar/gostruct2openapi/doc/internal/util"
 	"go/types"
 	"golang.org/x/tools/go/packages"
 	"regexp"
 )
 
+const defaultStructTag = "json"
+
+// Generator generated the OpenAPI document for the named packages
 type Generator interface {
 	DocumentStruct(_package ...string) ([]spec.Schema, error)
 }
@@ -15,16 +20,17 @@ type Generator interface {
 type openapiGenerator struct {
 	filter          *regexp.Regexp
 	structTag       string
-	commentRegistry *CommentRegistry
-	metadataParser  *MetadataParser
+	commentRegistry *internal.CommentRegistry
+	metadataParser  *internal.MetadataParser
 }
 
-func NewOpenapiGenerator(filter *regexp.Regexp, tags string) Generator {
-	if len(tags) == 0 {
-		tags = "json"
+// NewOpenapiGenerator returns a new Generator
+func NewOpenapiGenerator(filter *regexp.Regexp, structTag string) Generator {
+	if len(structTag) == 0 {
+		structTag = defaultStructTag
 	}
 
-	return &openapiGenerator{filter: filter, structTag: tags, commentRegistry: newCommentRegistry(), metadataParser: newMetadataParser()}
+	return &openapiGenerator{filter: filter, structTag: structTag, commentRegistry: internal.NewCommentRegistry(), metadataParser: internal.NewMetadataParser()}
 }
 
 func (o *openapiGenerator) DocumentStruct(_package ...string) ([]spec.Schema, error) {
@@ -37,125 +43,133 @@ func (o *openapiGenerator) DocumentStruct(_package ...string) ([]spec.Schema, er
 	return registry.Values(), nil
 }
 
-func (o *openapiGenerator) parse(pkgs []*packages.Package) SpecRegistry {
-	specs := make(SpecRegistry)
+func (o *openapiGenerator) parse(pkgs []*packages.Package) internal.SpecRegistry {
+	specs := make(internal.SpecRegistry)
 
 	for _, pkg := range pkgs {
-		o.commentRegistry.load(pkg)
-		scope := pkg.Types.Scope()
+		// prepare all comments in package
+		o.commentRegistry.Load(pkg)
 
+		// for each package iterate all types (structs, (struct) methods, functions, ...)
+		scope := pkg.Types.Scope()
 		for _, structScopeName := range scope.Names() {
-			if !o.filter.MatchString(structScopeName) {
+			if o.doFilter(structScopeName) {
 				continue
 			}
-			specs.Extend(o.processObj(newTargetType(structScopeName, scope.Lookup(structScopeName))))
+			lookup := scope.Lookup(structScopeName)
+			t := internal.NewTargetType(structScopeName, lookup)
+			specs.Extend(o.processObj(t))
 		}
 	}
 
 	return specs
 }
 
-func (o *openapiGenerator) processObj(target *targetType) SpecRegistry {
-	if !target.isValid() || !target.isStruct() {
+func (o *openapiGenerator) doFilter(value string) bool {
+	return !o.filter.MatchString(value)
+}
+
+func (o *openapiGenerator) processObj(target *internal.TargetType) internal.SpecRegistry {
+	if !target.IsValid() || !target.IsStruct() {
 		return nil
 	}
 
-	specs := make(SpecRegistry)
-	specs.Extend(o.processTarget(target.toTargetStruct()))
-	if target.isNamedType() {
-		specs.Extend(o.processStructMethods(target.toNamedType()))
+	specs := make(internal.SpecRegistry)
+	specs.Extend(o.processTarget(target.ToTargetStruct()))
+	if target.IsNamedType() {
+		specs.Extend(o.processStructMethods(target.ToNamedType()))
 	}
 
 	return specs
 }
 
-func (o *openapiGenerator) processTarget(target *targetStruct) SpecRegistry {
-	fmt.Printf("Processing struct: name=%s\n", target.name)
+func (o *openapiGenerator) processTarget(target *internal.TargetStruct) internal.SpecRegistry {
+	fmt.Printf("Processing struct: name=%s\n", target.Name())
 
-	if target.isNamedType() {
-		if pkgs, err := loadPackages(target.toNamedType().Obj().Pkg().Path()); err == nil {
-			o.commentRegistry.load(pkgs...)
+	if target.IsNamedType() {
+		if pkgs, err := loadPackages(target.ToNamedType().Obj().Pkg().Path()); err == nil {
+			o.commentRegistry.Load(pkgs...)
 		}
 	}
 
-	metadata := o.metadataParser.parseStructDesc(o.commentRegistry.lookup(target.ID()))
-	var props = spec.SchemaProps{ID: metadata.lookup(titleAttr, target.name), Type: []string{objectType}, Description: cleanDescription(metadata.lookup(descriptionAttr, "")), Properties: make(spec.SchemaProperties)}
-	specs := make(SpecRegistry)
+	metadata := o.metadataParser.ParseStructDesc(o.commentRegistry.Lookup(target.ID()))
+	var props = spec.SchemaProps{ID: metadata.Lookup(internal.TitleAttr, target.Name()), Type: []string{internal.ObjectType.String()}, Description: util.CleanDescription(metadata.Lookup(internal.DescriptionAttr, "")), Properties: make(spec.SchemaProperties)}
+	specs := make(internal.SpecRegistry)
 	specs.AddSchemaProp(props)
 	specs.Extend(o.toSpec(&props, target))
 
 	return specs
 }
 
-func (o *openapiGenerator) processStructMethods(_structTyp *types.Named) SpecRegistry {
-	specs := make(SpecRegistry)
+func (o *openapiGenerator) processStructMethods(_structTyp *types.Named) internal.SpecRegistry {
+	specs := make(internal.SpecRegistry)
 
 	for i := 0; i < _structTyp.NumMethods(); i++ {
 		scope := _structTyp.Method(i).Scope()
 		for _, methodScopeName := range scope.Names() {
-			if !o.filter.MatchString(methodScopeName) {
+			if o.doFilter(methodScopeName) {
 				continue
 			}
-			specs.Extend(o.processObj(newTargetType(methodScopeName, scope.Lookup(methodScopeName))))
+			specs.Extend(o.processObj(internal.NewTargetType(methodScopeName, scope.Lookup(methodScopeName))))
 		}
 	}
 
 	return specs
 }
 
-func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *targetStruct) SpecRegistry {
-	specs := make(SpecRegistry)
+func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *internal.TargetStruct) internal.SpecRegistry {
+	specs := make(internal.SpecRegistry)
 
-	for i := 0; i < target.origStruct.NumFields(); i++ {
-		field := target.origStruct.Field(i)
+	for i := 0; i < target.OriginalStruct().NumFields(); i++ {
+		field := target.OriginalStruct().Field(i)
 
 		if field.Embedded() {
 			if _embeddedStruct, ok := field.Type().Underlying().(*types.Struct); ok {
-				subSpecs := o.toSpec(props, newTargetStruct(field.Name(), field.Type(), _embeddedStruct))
+				subSpecs := o.toSpec(props, internal.NewTargetStruct(field.Name(), field.Type(), _embeddedStruct))
 				specs.Extend(subSpecs)
 			}
 		} else if field.Exported() {
 			fieldName := field.Name()
 			underlying := field.Type().Underlying()
 
-			tf := &targetField{
-				packageID:  field.Pkg().Path(),
-				structName: target.name,
-				fieldTag:   target.origStruct.Tag(i),
-				fieldName:  fieldName,
-			}
+			tf := internal.NewTargetField(
+				field.Pkg().Path(),
+				target.Name(),
+				target.OriginalStruct().Tag(i),
+				fieldName,
+			)
 
 			//early handling of time.Time due to underlying type is actually a struct
-			if isTimeField(field.Type()) {
-				tf.specField = structFieldTypeMap["time.Time"]
+			if util.IsTimeField(field.Type()) {
+				tf.SetSpecField(internal.StructFieldTypeMap["time.Time"])
 				o.mapField(props, tf)
 				continue
 			}
 
 			switch u := underlying.(type) {
 			case *types.Map:
-				tf.specField = specField{baseType: objectType}
-				tf.isAdditionalProperties = true
-				tf.elem = u.Elem()
+				tf.SetSpecField(internal.NewSpecField(internal.ObjectType))
+				tf.SetIsAdditionalProperties()
+				tf.SetElem(u.Elem())
 				specs.Extend(o.handleUnderlyingField(props, tf))
 			case *types.Interface, *types.Chan:
 				// falling back to object type because handling of type is not possible
-				tf.specField = specField{baseType: objectType}
+				tf.SetSpecField(internal.NewSpecField(internal.ObjectType))
 				o.mapField(props, tf)
 			case *types.Struct:
 				name := field.Type().(*types.Named).Obj().Name()
-				tf.specField = specField{ref: name}
+				tf.SetSpecField(internal.NewStructSpecField(name))
 				o.mapField(props, tf)
-				specs.Extend(o.processTarget(newTargetStruct(name, field.Type(), u)))
+				specs.Extend(o.processTarget(internal.NewTargetStruct(name, field.Type(), u)))
 			case *types.Pointer:
-				tf.elem = u.Elem()
+				tf.SetElem(u.Elem())
 				specs.Extend(o.handleUnderlyingField(props, tf))
 			case *types.Slice:
-				tf.elem = u.Elem()
-				tf.isArrayType = true
+				tf.SetElem(u.Elem())
+				tf.SetIsArrayType()
 				specs.Extend(o.handleUnderlyingField(props, tf))
 			default:
-				tf.specField = structFieldTypeMap[underlying.String()]
+				tf.SetSpecField(internal.StructFieldTypeMap[underlying.String()])
 				o.mapField(props, tf)
 			}
 		}
@@ -164,52 +178,55 @@ func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *targetStruct)
 	return specs
 }
 
-func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target *targetField) SpecRegistry {
-	specs := make(SpecRegistry)
+func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target *internal.TargetField) internal.SpecRegistry {
+	specs := make(internal.SpecRegistry)
 
-	switch u := target.elem.Underlying().(type) {
+	switch u := target.UnderlyingElem().(type) {
 	case *types.Pointer:
-		target.elem = u.Elem()
+		target.SetElem(u.Elem())
 		return o.handleUnderlyingField(props, target)
 	case *types.Struct:
-		field := target.elem.(*types.Named).Obj()
+		field := target.Elem().(*types.Named).Obj()
 		name := field.Name()
-		sf := specField{ref: name}
-		if target.isArrayType {
-			sf.baseType = arrayType
-		}
-		if target.isAdditionalProperties {
-			target.additionalProperties = sf
+		var sf *internal.SpecField
+		if target.IsArrayType() {
+			sf = internal.NewArraySpecField(internal.StructType)
+			sf.SetRef(name)
 		} else {
-			target.specField = sf
+			sf = internal.NewStructSpecField(name)
+		}
+		if target.IsAdditionalProperties() {
+			target.SetAdditionalProperties(sf)
+		} else {
+			target.SetSpecField(sf)
 		}
 		o.mapField(props, target)
-		specs.Extend(o.processTarget(newTargetStruct(name, field.Type(), u)))
+		specs.Extend(o.processTarget(internal.NewTargetStruct(name, field.Type(), u)))
 	case *types.Basic:
-		var sf specField
-		if target.isArrayType {
-			sf = specField{baseType: arrayType, itemsType: structFieldTypeMap[u.String()].baseType}
+		var sf *internal.SpecField
+		if target.IsArrayType() {
+			sf = internal.NewArraySpecField(internal.StructFieldTypeMap[u.String()].BaseType())
 		} else {
-			sf = structFieldTypeMap[u.String()]
+			sf = internal.StructFieldTypeMap[u.String()]
 		}
-		if target.isAdditionalProperties {
-			target.additionalProperties = sf
+		if target.IsAdditionalProperties() {
+			target.SetAdditionalProperties(sf)
 		} else {
-			target.specField = sf
+			target.SetSpecField(sf)
 		}
 		o.mapField(props, target)
 	default:
-		fmt.Printf("has no basic type but %s", target.elem.Underlying().String())
-		var sf specField
-		if target.isArrayType {
-			sf = specField{baseType: arrayType, itemsType: objectType}
+		fmt.Printf("has no well-known basic type. Got %s", target.UnderlyingElem().String())
+		var sf *internal.SpecField
+		if target.IsArrayType() {
+			sf = internal.NewArraySpecField(internal.ObjectType)
 		} else {
-			sf = specField{baseType: objectType}
+			sf = internal.NewSpecField(internal.ObjectType)
 		}
-		if target.isAdditionalProperties {
-			target.additionalProperties = sf
+		if target.IsAdditionalProperties() {
+			target.SetAdditionalProperties(sf)
 		} else {
-			target.specField = sf
+			target.SetSpecField(sf)
 		}
 		o.mapField(props, target)
 	}
@@ -217,14 +234,14 @@ func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target
 	return specs
 }
 
-func (o *openapiGenerator) mapField(props *spec.SchemaProps, target *targetField) {
+func (o *openapiGenerator) mapField(props *spec.SchemaProps, target *internal.TargetField) {
 	schema := spec.Schema{
-		SchemaProps: target.specField.toSchemaProp(cleanDescription(o.commentRegistry.lookup(target.ID()))),
+		SchemaProps: target.SpecField().ToSchemaProp(util.CleanDescription(o.commentRegistry.Lookup(target.ID()))),
 	}
-	if target.additionalProperties.isValid() {
+	if target.HasAdditionalProperties() {
 		schema.AdditionalProperties = &spec.SchemaOrBool{
 			Schema: &spec.Schema{
-				SchemaProps: target.additionalProperties.toSchemaProp(""),
+				SchemaProps: target.AdditionalProperties().ToSchemaProp(""),
 			},
 		}
 	}

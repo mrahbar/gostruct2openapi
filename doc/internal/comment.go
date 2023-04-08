@@ -1,7 +1,8 @@
-package doc
+package internal
 
 import (
 	"fmt"
+	"github.com/mrahbar/gostruct2openapi/doc/internal/util"
 	"go/ast"
 	"go/doc"
 	"golang.org/x/tools/go/packages"
@@ -12,13 +13,14 @@ type CommentRegistry struct {
 	registry       map[string]string
 }
 
-func newCommentRegistry() *CommentRegistry {
+func NewCommentRegistry() *CommentRegistry {
 	return &CommentRegistry{registry: make(map[string]string)}
 }
 
-func (c *CommentRegistry) load(pkgs ...*packages.Package) {
+// Load loads struct as well as struct field comments and builds comment registry for given packages.
+func (c *CommentRegistry) Load(pkgs ...*packages.Package) {
 	for _, pkg := range pkgs {
-		if Contains(c.loadedPackages, pkg.ID) {
+		if util.Contains(c.loadedPackages, pkg.ID) {
 			continue
 		}
 		c.loadedPackages = append(c.loadedPackages, pkg.ID)
@@ -62,7 +64,7 @@ func (c *CommentRegistry) loadStructFieldComments(pkg *packages.Package) {
 							*ast.StarExpr:
 							for _, name := range field.Names {
 								if f, ok := name.Obj.Decl.(*ast.Field); ok && len(f.Doc.Text()) > 0 {
-									tf := &targetField{fieldName: name.Name, structName: structName, packageID: pkg.ID}
+									tf := &TargetField{fieldName: name.Name, structName: structName, packageID: pkg.ID}
 									c.registry[tf.ID()] = f.Doc.Text()
 								}
 							}
@@ -74,6 +76,6 @@ func (c *CommentRegistry) loadStructFieldComments(pkg *packages.Package) {
 	}
 }
 
-func (c *CommentRegistry) lookup(key string) string {
+func (c *CommentRegistry) Lookup(key string) string {
 	return c.registry[key]
 }
