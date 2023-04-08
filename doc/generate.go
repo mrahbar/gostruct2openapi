@@ -43,8 +43,8 @@ func (o *openapiGenerator) DocumentStruct(_package ...string) ([]spec.Schema, er
 	return registry.Values(), nil
 }
 
-func (o *openapiGenerator) parse(pkgs []*packages.Package) internal.SpecRegistry {
-	specs := make(internal.SpecRegistry)
+func (o *openapiGenerator) parse(pkgs []*packages.Package) SpecRegistry {
+	specs := make(SpecRegistry)
 
 	for _, pkg := range pkgs {
 		// prepare all comments in package
@@ -56,9 +56,7 @@ func (o *openapiGenerator) parse(pkgs []*packages.Package) internal.SpecRegistry
 			if o.doFilter(structScopeName) {
 				continue
 			}
-			lookup := scope.Lookup(structScopeName)
-			t := internal.NewTargetType(structScopeName, lookup)
-			specs.Extend(o.processObj(t))
+			specs.Extend(o.processObj(internal.NewTargetType(structScopeName, scope.Lookup(structScopeName))))
 		}
 	}
 
@@ -69,12 +67,12 @@ func (o *openapiGenerator) doFilter(value string) bool {
 	return !o.filter.MatchString(value)
 }
 
-func (o *openapiGenerator) processObj(target *internal.TargetType) internal.SpecRegistry {
+func (o *openapiGenerator) processObj(target *internal.TargetType) SpecRegistry {
 	if !target.IsValid() || !target.IsStruct() {
 		return nil
 	}
 
-	specs := make(internal.SpecRegistry)
+	specs := make(SpecRegistry)
 	specs.Extend(o.processTarget(target.ToTargetStruct()))
 	if target.IsNamedType() {
 		specs.Extend(o.processStructMethods(target.ToNamedType()))
@@ -83,7 +81,7 @@ func (o *openapiGenerator) processObj(target *internal.TargetType) internal.Spec
 	return specs
 }
 
-func (o *openapiGenerator) processTarget(target *internal.TargetStruct) internal.SpecRegistry {
+func (o *openapiGenerator) processTarget(target *internal.TargetStruct) SpecRegistry {
 	fmt.Printf("Processing struct: name=%s\n", target.Name())
 
 	if target.IsNamedType() {
@@ -94,18 +92,22 @@ func (o *openapiGenerator) processTarget(target *internal.TargetStruct) internal
 
 	metadata := o.metadataParser.ParseStructDesc(o.commentRegistry.Lookup(target.ID()))
 	var props = spec.SchemaProps{ID: metadata.Lookup(internal.TitleAttr, target.Name()), Type: []string{internal.ObjectType.String()}, Description: util.CleanDescription(metadata.Lookup(internal.DescriptionAttr, "")), Properties: make(spec.SchemaProperties)}
-	specs := make(internal.SpecRegistry)
+	specs := make(SpecRegistry)
 	specs.AddSchemaProp(props)
 	specs.Extend(o.toSpec(&props, target))
 
 	return specs
 }
 
-func (o *openapiGenerator) processStructMethods(_structTyp *types.Named) internal.SpecRegistry {
-	specs := make(internal.SpecRegistry)
+func (o *openapiGenerator) processStructMethods(_structTyp *types.Named) SpecRegistry {
+	specs := make(SpecRegistry)
 
 	for i := 0; i < _structTyp.NumMethods(); i++ {
 		scope := _structTyp.Method(i).Scope()
+		if scope == nil {
+			fmt.Printf("Method %q has no associated scope\n", _structTyp.Method(i).Name())
+			continue
+		}
 		for _, methodScopeName := range scope.Names() {
 			if o.doFilter(methodScopeName) {
 				continue
@@ -117,8 +119,8 @@ func (o *openapiGenerator) processStructMethods(_structTyp *types.Named) interna
 	return specs
 }
 
-func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *internal.TargetStruct) internal.SpecRegistry {
-	specs := make(internal.SpecRegistry)
+func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *internal.TargetStruct) SpecRegistry {
+	specs := make(SpecRegistry)
 
 	for i := 0; i < target.OriginalStruct().NumFields(); i++ {
 		field := target.OriginalStruct().Field(i)
@@ -178,8 +180,8 @@ func (o *openapiGenerator) toSpec(props *spec.SchemaProps, target *internal.Targ
 	return specs
 }
 
-func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target *internal.TargetField) internal.SpecRegistry {
-	specs := make(internal.SpecRegistry)
+func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target *internal.TargetField) SpecRegistry {
+	specs := make(SpecRegistry)
 
 	switch u := target.UnderlyingElem().(type) {
 	case *types.Pointer:

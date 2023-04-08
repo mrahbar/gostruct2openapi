@@ -2,6 +2,7 @@ package doc
 
 import (
 	"encoding/json"
+	"github.com/go-openapi/spec"
 	"github.com/stretchr/testify/assert"
 	"regexp"
 	"testing"
@@ -12,6 +13,7 @@ func Test_OpenapiGenerator_UnknownPackage(t *testing.T) {
 	specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/unknown")
 	assert.Error(t, err)
 	assert.Empty(t, specs)
+	assert.Empty(t, missingDescriptions(specs))
 }
 
 func Test_OpenapiGenerator_Struct0(t *testing.T) {
@@ -66,6 +68,7 @@ func Test_OpenapiGenerator_Struct1(t *testing.T) {
 			}
 		}
 	}`, string(bytes))
+	assert.Empty(t, missingDescriptions(specs))
 }
 
 func Test_OpenapiGenerator_Struct2(t *testing.T) {
@@ -116,6 +119,7 @@ func Test_OpenapiGenerator_Struct2(t *testing.T) {
 			}
 		}
 	}`, string(bytes))
+	assert.Empty(t, missingDescriptions(specs))
 }
 
 func Test_OpenapiGenerator_Struct3(t *testing.T) {
@@ -144,6 +148,7 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 					"type": "boolean"
 				},
 				"FieldA": {
+					"description": "FieldA comment",
 					"format": "RFC3339",
 					"type": "string"
 				},
@@ -221,6 +226,7 @@ func Test_OpenapiGenerator_Struct3(t *testing.T) {
 			"type":"object"
 		}
 	]`, string(bytes))
+	assert.Empty(t, missingDescriptions(specs))
 }
 
 func Test_OpenapiGenerator_Struct4(t *testing.T) {
@@ -266,6 +272,7 @@ func Test_OpenapiGenerator_Struct4(t *testing.T) {
 			}
 		}
 	}`, string(bytes))
+	assert.Empty(t, missingDescriptions(specs))
 }
 
 func Test_OpenapiGenerator_Method(t *testing.T) {
@@ -399,4 +406,19 @@ func Test_OpenapiGenerator_Method(t *testing.T) {
 		}
 	]
 `, string(bytes))
+}
+
+func missingDescriptions(specs []spec.Schema) map[string][]string {
+	missing := make(map[string][]string)
+
+	for _, schema := range specs {
+		id := schema.ID
+		for key, p := range schema.Properties {
+			if p.Ref.String() == "" && p.Description == "" {
+				missing[id] = append(missing[id], key)
+			}
+		}
+	}
+
+	return missing
 }

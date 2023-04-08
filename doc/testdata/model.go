@@ -9,8 +9,8 @@ import (
 type TestBaseInterface interface {
 }
 
-//@title Test Base Struct
-//Test Base description
+// @title Test Base Struct
+// Test Base description
 type TestBaseStruct struct {
 	//baseFieldB comment
 	baseFieldB string
@@ -22,8 +22,8 @@ type TestBaseStruct struct {
 	BaseFieldD bool
 }
 
-//@title Test Underlying Struct
-//Test Underlying Struct description
+// @title Test Underlying Struct
+// Test Underlying Struct description
 type TestUnderlyingStruct struct {
 	//underlyingFieldB comment
 	underlyingFieldB string
@@ -35,8 +35,8 @@ type TestUnderlyingStruct struct {
 	UnderlyingFieldD bool
 }
 
-//@title Test Struct 0
-//Test Struct 0 description
+// @title Test Struct 0
+// Test Struct 0 description
 type testStruct0 struct {
 	fieldA string
 	FieldB string
@@ -44,8 +44,8 @@ type testStruct0 struct {
 	FieldD bool
 }
 
-//@title Test Struct 1
-//Test Struct 1 description
+// @title Test Struct 1
+// Test Struct 1 description
 type TestStruct1 struct {
 	//fieldA comment
 	fieldA string
@@ -57,8 +57,8 @@ type TestStruct1 struct {
 	FieldD bool
 }
 
-//@title Test Struct 2
-//Test Struct 2 description
+// @title Test Struct 2
+// Test Struct 2 description
 type TestStruct2 struct {
 	//TestBaseStruct comment
 	TestBaseStruct
@@ -72,11 +72,11 @@ type TestStruct2 struct {
 	FieldD []bool
 }
 
-//MyString description
+// MyString description
 type MyString string
 
-//@title Test Struct 3
-//Test Struct 3 description
+// @title Test Struct 3
+// Test Struct 3 description
 type TestStruct3 struct {
 	//TestBaseStruct comment
 	TestBaseStruct
@@ -104,9 +104,9 @@ type TestStruct3 struct {
 	FieldK map[string]*TestUnderlyingStruct
 }
 
-//@title Test Struct 4
-//Test Struct 4 description
-type TestStruct4 struct { //TODO add required tag
+// @title Test Struct 4
+// Test Struct 4 description
+type TestStruct4 struct {
 	//FieldA comment
 	FieldA []string `json:"otherFieldA"`
 	//FieldB comment
@@ -117,14 +117,14 @@ type TestStruct4 struct { //TODO add required tag
 	FieldD []bool `json:"otherFieldD"`
 }
 
-//@title MyAsset
-//MyAsset description
+// @title MyAsset
+// MyAsset description
 type httpHandlerResp struct {
 	TestStructs  []*TestStruct4               `json:"structs"`
 	OtherStructs []*testdata.TestOtherStruct5 `json:"other_structs"`
 }
 
-//@title HTTP Handler
+// @title HTTP Handler
 type httpHandler struct {
 }
 

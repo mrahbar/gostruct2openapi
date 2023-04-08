@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/doc"
 	"golang.org/x/tools/go/packages"
+	"strings"
 )
 
 type CommentRegistry struct {
@@ -40,7 +41,7 @@ func (c *CommentRegistry) loadStructComments(pkg *packages.Package) {
 	p := doc.New(a, ".", doc.AllDecls)
 	for _, t := range p.Types {
 		if len(t.Doc) > 0 {
-			c.registry[fmt.Sprintf("%s.%s", pkg.ID, t.Name)] = t.Doc
+			c.register(fmt.Sprintf("%s.%s", pkg.ID, t.Name), t.Doc)
 		}
 	}
 }
@@ -59,13 +60,15 @@ func (c *CommentRegistry) loadStructFieldComments(pkg *packages.Package) {
 							*ast.MapType,
 							*ast.ChanType,
 							*ast.InterfaceType,
+							*ast.SelectorExpr,
 							*ast.StructType,
 							// Pointer types are represented via StarExpr nodes.
 							*ast.StarExpr:
 							for _, name := range field.Names {
-								if f, ok := name.Obj.Decl.(*ast.Field); ok && len(f.Doc.Text()) > 0 {
+								f, ok := name.Obj.Decl.(*ast.Field)
+								if ok && len(f.Doc.Text()) > 0 {
 									tf := &TargetField{fieldName: name.Name, structName: structName, packageID: pkg.ID}
-									c.registry[tf.ID()] = f.Doc.Text()
+									c.register(tf.ID(), f.Doc.Text())
 								}
 							}
 						}
@@ -76,6 +79,10 @@ func (c *CommentRegistry) loadStructFieldComments(pkg *packages.Package) {
 	}
 }
 
+func (c *CommentRegistry) register(key, value string) {
+	c.registry[strings.ToLower(key)] = value
+}
+
 func (c *CommentRegistry) Lookup(key string) string {
-	return c.registry[key]
+	return c.registry[strings.ToLower(key)]
 }

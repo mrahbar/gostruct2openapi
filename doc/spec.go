@@ -1,4 +1,4 @@
-package internal
+package doc
 
 import (
 	"github.com/go-openapi/spec"
