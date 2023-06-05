@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/fatih/structtag v1.2.0
 	github.com/go-openapi/spec v0.20.8
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/tools v0.8.0
 )
 
