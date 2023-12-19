@@ -105,7 +105,7 @@ func (o *openapiGenerator) processStructMethods(_structTyp *types.Named) SpecReg
 	for i := 0; i < _structTyp.NumMethods(); i++ {
 		scope := _structTyp.Method(i).Scope()
 		if scope == nil {
-			fmt.Printf("Method %q has no associated scope\n", _structTyp.Method(i).Name())
+			fmt.Printf("Method %q of struct %s has no associated scope\n", _structTyp.Method(i).Name(), _structTyp.String())
 			continue
 		}
 		for _, methodScopeName := range scope.Names() {

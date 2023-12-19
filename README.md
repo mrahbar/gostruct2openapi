@@ -18,7 +18,7 @@ specs, err := generator.DocumentStruct("github.com/mrahbar/gostruct2openapi/doc/
 if err != nil {
     log.Fatal(err)
 }
-//TODO use specs varible, e.g. by writting it to a file
+//TODO use specs variable, e.g. by writting it to a file
 ```
 
 ### Example
