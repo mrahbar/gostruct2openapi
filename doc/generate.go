@@ -18,10 +18,11 @@ type Generator interface {
 }
 
 type openapiGenerator struct {
-	filter          *regexp.Regexp
-	structTag       string
-	commentRegistry *internal.CommentRegistry
-	metadataParser  *internal.MetadataParser
+	filter           *regexp.Regexp
+	structTag        string
+	commentRegistry  *internal.CommentRegistry
+	metadataParser   *internal.MetadataParser
+	processedTargets map[string]struct{}
 }
 
 // NewOpenapiGenerator returns a new Generator
@@ -30,7 +31,13 @@ func NewOpenapiGenerator(filter *regexp.Regexp, structTag string) Generator {
 		structTag = defaultStructTag
 	}
 
-	return &openapiGenerator{filter: filter, structTag: structTag, commentRegistry: internal.NewCommentRegistry(), metadataParser: internal.NewMetadataParser()}
+	return &openapiGenerator{
+		filter:           filter,
+		structTag:        structTag,
+		commentRegistry:  internal.NewCommentRegistry(),
+		metadataParser:   internal.NewMetadataParser(),
+		processedTargets: make(map[string]struct{}),
+	}
 }
 
 func (o *openapiGenerator) DocumentStruct(_package ...string) ([]spec.Schema, error) {
@@ -82,6 +89,13 @@ func (o *openapiGenerator) processObj(target *internal.TargetType) SpecRegistry 
 }
 
 func (o *openapiGenerator) processTarget(target *internal.TargetStruct) SpecRegistry {
+	specs := make(SpecRegistry)
+	if _, exists := o.processedTargets[target.Name()]; exists {
+		return specs
+	} else {
+		o.processedTargets[target.Name()] = struct{}{}
+	}
+
 	fmt.Printf("Processing struct: name=%s\n", target.Name())
 
 	if target.IsNamedType() {
@@ -92,7 +106,6 @@ func (o *openapiGenerator) processTarget(target *internal.TargetStruct) SpecRegi
 
 	metadata := o.metadataParser.ParseStructDesc(o.commentRegistry.Lookup(target.ID()))
 	var props = spec.SchemaProps{ID: metadata.Lookup(internal.TitleAttr, target.Name()), Type: []string{internal.ObjectType.String()}, Description: util.CleanDescription(metadata.Lookup(internal.DescriptionAttr, "")), Properties: make(spec.SchemaProperties)}
-	specs := make(SpecRegistry)
 	specs.AddSchemaProp(props)
 	specs.Extend(o.toSpec(&props, target))
 
@@ -218,7 +231,7 @@ func (o *openapiGenerator) handleUnderlyingField(props *spec.SchemaProps, target
 		}
 		o.mapField(props, target)
 	default:
-		fmt.Printf("has no well-known basic type. Got %s", target.UnderlyingElem().String())
+		fmt.Printf("%s has no well-known basic type. Got %s\n", target.ID(), target.UnderlyingElem().String())
 		var sf *internal.SpecField
 		if target.IsArrayType() {
 			sf = internal.NewArraySpecField(internal.ObjectType)
